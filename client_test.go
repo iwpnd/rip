@@ -1,8 +1,67 @@
 package rip
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
+
+func TestGetRequest(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+	defer ts.Close()
+
+	c, err := NewClient(ts.URL, Options{})
+	if err != nil {
+		t.Error("Cannot initialize client")
+	}
+
+	res, err := c.Request("GET", "", RequestOptions{})
+	if err != nil {
+		t.Errorf("expected err to be nil got: %v", err)
+	}
+
+	fmt.Println(res.Request.URL.String())
+
+	if res.StatusCode() != 200 {
+		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
+	}
+}
+
+func TestGetRequestWithParams(t *testing.T) {
+	ts := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+		}))
+	defer ts.Close()
+
+	c, err := NewClient(ts.URL, Options{})
+	if err != nil {
+		t.Error("Cannot initialize client")
+	}
+
+	res, err := c.Request("GET", "/:test1/:test2", RequestOptions{
+		Params: map[string]interface{}{
+			"test1": "test",
+			"test2": 1,
+		}})
+
+	if err != nil {
+		t.Errorf("expected err to be nil got: %v", err)
+	}
+
+	expectedURL := ts.URL + "/test/1"
+	if res.Request.URL.String() != expectedURL {
+		t.Errorf("expected: %v, got: %v", expectedURL, res.Request.URL.String())
+	}
+
+	if res.StatusCode() != 200 {
+		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
+	}
+}
 
 func TestParseParams(t *testing.T) {
 	type tcase struct {
@@ -90,25 +149,18 @@ func TestParseQueryParams(t *testing.T) {
 				"test1": "test1",
 				"test2": 1,
 				"test3": 1.1,
+				"test4": true,
 			},
-			expected: "test1=test1&test2=1&test3=1.100000",
+			expected: "test1=test1&test2=1&test3=1.100000&test4=true",
 		},
 		"test empty query": {
 			expected: "",
-		},
-		"test ignore object": {
-			query: Query{
-				"test": map[string]interface{}{
-					"bla": "bla",
-				},
-			},
-			expected: "test=",
 		},
 	}
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
-			got := parseQueryString(tc.query)
+			got := parseQuery(tc.query)
 
 			if got != tc.expected {
 				t.Errorf("expected: %v, got: %v", tc.expected, got)
