@@ -2,29 +2,60 @@ package rip
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
+type TestResponse struct {
+	User string `json:"user"`
+	Age  int    `json:"age"`
+}
+
+type TestResponseData struct {
+	Data TestResponse `json:"data"`
+}
+
+var (
+	mux    *http.ServeMux
+	ts     *httptest.Server
+	client *Client
+)
+
+func fixture(path string) string {
+	b, err := ioutil.ReadFile("testdata/fixtures/" + path)
+	if err != nil {
+		panic(err)
+	}
+	return string(b)
+}
+
+func setup() func() {
+	mux = http.NewServeMux()
+	ts = httptest.NewServer(mux)
+
+	return func() {
+		ts.Close()
+	}
+}
+
 func TestGetRequest(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-	defer ts.Close()
+	teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, fixture("response.json"))
+	})
 
 	c, err := NewClient(ts.URL, Options{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.Request("GET", "", RequestOptions{})
-	if err != nil {
-		t.Errorf("expected err to be nil got: %v", err)
-	}
-
-	fmt.Println(res.Request.URL.String())
+	res, err := c.NewRequest(RequestOptions{}).Execute("GET", "/")
 
 	if res.StatusCode() != 200 {
 		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
@@ -32,30 +63,32 @@ func TestGetRequest(t *testing.T) {
 }
 
 func TestGetRequestWithParams(t *testing.T) {
-	ts := httptest.NewServer(
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-		}))
-	defer ts.Close()
+	teardown := setup()
+	defer teardown()
+
+	mux.HandleFunc("/test/1", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, fixture("response.json"))
+	})
 
 	c, err := NewClient(ts.URL, Options{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.Request("GET", "/:test1/:test2", RequestOptions{
+	res, err := c.NewRequest(RequestOptions{
 		Params: map[string]interface{}{
 			"test1": "test",
 			"test2": 1,
-		}})
-
+		}}).Execute("GET", "/:test1/:test2")
 	if err != nil {
 		t.Errorf("expected err to be nil got: %v", err)
 	}
 
 	expectedURL := ts.URL + "/test/1"
-	if res.Request.URL.String() != expectedURL {
-		t.Errorf("expected: %v, got: %v", expectedURL, res.Request.URL.String())
+	if res.Request.URL != expectedURL {
+		t.Errorf("expected: %v, got: %v", expectedURL, res.Request.URL)
 	}
 
 	if res.StatusCode() != 200 {
@@ -118,10 +151,11 @@ func TestParseParams(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
-			got := parseParams(tc.path, tc.params)
+			r := &Request{}
+			r.parsePath(tc.path, tc.params)
 
-			if got != tc.expected {
-				t.Errorf("expected: %v, got: %v", tc.expected, got)
+			if r.Path != tc.expected {
+				t.Errorf("expected: %v, got: %v", tc.expected, r.Path)
 			}
 		}
 	}
@@ -160,8 +194,10 @@ func TestParseQueryParams(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
-			got := parseQuery(tc.query)
+			r := &Request{}
+			r.parseQuery(tc.query)
 
+			got := r.QueryParams.Encode()
 			if got != tc.expected {
 				t.Errorf("expected: %v, got: %v", tc.expected, got)
 			}

@@ -8,7 +8,7 @@ import (
 
 // Response ...
 type Response struct {
-	Request     *http.Request
+	Request     *Request
 	RawResponse *http.Response
 	body        []byte
 }
