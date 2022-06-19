@@ -3,6 +3,7 @@ package rip
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 )
 
@@ -107,7 +108,7 @@ func TestParseQueryParams(t *testing.T) {
 			r := &Request{}
 			r.parseQuery(tc.query)
 
-			got := r.QueryParams.Encode()
+			got := r.Query.Encode()
 			if got != tc.expected {
 				t.Errorf("expected: %v, got: %v", tc.expected, got)
 			}
@@ -205,6 +206,45 @@ func TestSetHeaders(t *testing.T) {
 			got := r.Header
 			if fmt.Sprint(got) != fmt.Sprint(tc.expHeader) {
 				t.Errorf("expected: %v, got: %v", fmt.Sprint(tc.expHeader), fmt.Sprint(got))
+			}
+		}
+	}
+
+	for name, tc := range tests {
+		t.Run(name, fn(tc))
+	}
+}
+
+func TestSetQuery(t *testing.T) {
+	type tcase struct {
+		options  RequestOptions
+		query    Query
+		expQuery url.Values
+	}
+
+	tests := map[string]tcase{
+		"test set query": {
+			options: RequestOptions{},
+			query: Query{
+				"test1": "test",
+				"test2": "test",
+			},
+			expQuery: url.Values{
+				"test1": []string{"test"},
+				"test2": []string{"test"},
+			},
+		},
+	}
+
+	fn := func(tc tcase) func(*testing.T) {
+		return func(t *testing.T) {
+			r := &Request{Options: tc.options}
+
+			r.SetQuery(tc.query)
+
+			got := r.Query
+			if fmt.Sprint(got) != fmt.Sprint(tc.expQuery) {
+				t.Errorf("expected: %v, got: %v", fmt.Sprint(tc.expQuery), fmt.Sprint(got))
 			}
 		}
 	}

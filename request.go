@@ -29,15 +29,15 @@ type Query = map[string]interface{}
 
 // Request ...
 type Request struct {
-	Path        string
-	RawRequest  *http.Request
-	Header      http.Header
-	QueryParams url.Values
-	Result      interface{}
-	Body        io.Reader
-	URL         string
-	Options     RequestOptions
-	client      *Client
+	Path       string
+	RawRequest *http.Request
+	Header     http.Header
+	Query      url.Values
+	Result     interface{}
+	Body       io.Reader
+	URL        string
+	Options    RequestOptions
+	client     *Client
 }
 
 // Execute executes a given request using a method on a given path
@@ -67,21 +67,28 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	return response, err
 }
 
+// SetQuery to set query parameters
+func (r *Request) SetQuery(query Query) *Request {
+	r.parseQuery(query)
+
+	return r
+}
+
 func (r *Request) parseQuery(query Query) {
-	r.QueryParams = url.Values{}
+	r.Query = url.Values{}
 	for k, v := range query {
 		switch v.(type) {
 		case float32:
 		case float64:
-			r.QueryParams.Add(k, fmt.Sprintf("%.6f", v))
+			r.Query.Add(k, fmt.Sprintf("%.6f", v))
 		case int32:
 		case int64:
 		case int:
-			r.QueryParams.Add(k, fmt.Sprintf("%d", v))
+			r.Query.Add(k, fmt.Sprintf("%d", v))
 		case string:
-			r.QueryParams.Add(k, fmt.Sprintf("%s", v))
+			r.Query.Add(k, fmt.Sprintf("%s", v))
 		case bool:
-			r.QueryParams.Add(k, fmt.Sprintf("%t", v))
+			r.Query.Add(k, fmt.Sprintf("%t", v))
 		default:
 			break
 		}
@@ -168,7 +175,7 @@ func (r *Request) parseBody(body interface{}) error {
 func (r *Request) parseURL() {
 	r.URL = r.client.baseURL.String() + r.Path
 
-	if r.QueryParams.Encode() != "" {
-		r.URL = r.URL + "?" + r.QueryParams.Encode()
+	if r.Query.Encode() != "" {
+		r.URL = r.URL + "?" + r.Query.Encode()
 	}
 }

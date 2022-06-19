@@ -40,7 +40,6 @@ func NewClient(host string, options ClientOptions) (*Client, error) {
 func (c *Client) NewRequest(options RequestOptions) *Request {
 	req := &Request{client: c, Options: options}
 
-	req.parseQuery(options.Query)
 	req.parseHeader(options.Header)
 	req.parseBody(options.Body)
 
