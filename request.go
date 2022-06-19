@@ -16,12 +16,6 @@ type Header = map[string]string
 // Params ...
 type Params = map[string]interface{}
 
-// Options ...
-type Options struct {
-	Header  Header
-	Timeout int
-}
-
 // RequestOptions ...
 type RequestOptions struct {
 	Header Header
@@ -52,8 +46,6 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 
 	r.parsePath(path, r.Options.Params)
 	r.parseURL()
-
-	fmt.Print(r.URL)
 
 	r.RawRequest, err = http.NewRequest(method, r.URL, r.Body)
 	if err != nil {

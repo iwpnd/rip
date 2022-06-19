@@ -8,15 +8,21 @@ import (
 
 const defaultTimeOut = 4
 
+// ClientOptions ...
+type ClientOptions struct {
+	Header  Header
+	Timeout int
+}
+
 // Client ...
 type Client struct {
 	httpClient *http.Client
 	baseURL    *url.URL
-	Options    Options
+	Options    ClientOptions
 }
 
 // NewClient creates a new Client
-func NewClient(host string, options Options) (*Client, error) {
+func NewClient(host string, options ClientOptions) (*Client, error) {
 	u, err := url.Parse(host)
 	if err != nil {
 		return &Client{}, err

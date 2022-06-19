@@ -50,7 +50,7 @@ func TestGetRequestText(t *testing.T) {
 		_, _ = w.Write([]byte("get: text response"))
 	})
 
-	c, err := NewClient(ts.URL, Options{})
+	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}
@@ -83,7 +83,7 @@ func TestGetRequestJSON(t *testing.T) {
 		_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
 	})
 
-	c, err := NewClient(ts.URL, Options{})
+	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}
@@ -116,7 +116,7 @@ func TestGetRequestWithParams(t *testing.T) {
 		_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
 	})
 
-	c, err := NewClient(ts.URL, Options{})
+	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}

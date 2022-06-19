@@ -174,3 +174,42 @@ func TestSetHeader(t *testing.T) {
 		t.Run(name, fn(tc))
 	}
 }
+
+func TestSetHeaders(t *testing.T) {
+	type tcase struct {
+		options     RequestOptions
+		inputHeader Header
+		expHeader   http.Header
+	}
+
+	tests := map[string]tcase{
+		"test multiple header without request options": {
+			options: RequestOptions{},
+			inputHeader: Header{
+				"test1": "test",
+				"test2": "test",
+			},
+			expHeader: http.Header{
+				"Test1": []string{"test"},
+				"Test2": []string{"test"},
+			},
+		},
+	}
+
+	fn := func(tc tcase) func(*testing.T) {
+		return func(t *testing.T) {
+			r := &Request{Options: tc.options}
+
+			r.SetHeaders(tc.inputHeader)
+
+			got := r.Header
+			if fmt.Sprint(got) != fmt.Sprint(tc.expHeader) {
+				t.Errorf("expected: %v, got: %v", fmt.Sprint(tc.expHeader), fmt.Sprint(got))
+			}
+		}
+	}
+
+	for name, tc := range tests {
+		t.Run(name, fn(tc))
+	}
+}
