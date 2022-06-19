@@ -17,10 +17,35 @@ type TestResponseData struct {
 }
 
 var (
-	mux    *http.ServeMux
-	ts     *httptest.Server
-	client *Client
+	ts *httptest.Server
 )
+
+func setupTestServer() func() {
+	ts = httptest.NewServer(http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == "GET" {
+				switch r.URL.Path {
+				case "/text":
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte("TestGet: text response"))
+				case "/json":
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
+				case "/test/1":
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusOK)
+					_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
+				default:
+					return
+				}
+			}
+		}))
+
+	return func() {
+		ts.Close()
+	}
+}
 
 func fixture(path string) string {
 	b, err := ioutil.ReadFile("testdata/fixtures/" + path)
@@ -30,25 +55,11 @@ func fixture(path string) string {
 	return string(b)
 }
 
-func setup() func() {
-	mux = http.NewServeMux()
-	ts = httptest.NewServer(mux)
-
-	return func() {
-		ts.Close()
-	}
-}
-
 func TestGetRequestText(t *testing.T) {
-	teardown := setup()
+	teardown := setupTestServer()
 	defer teardown()
 
 	testPath := "/text"
-
-	mux.HandleFunc(testPath, func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("get: text response"))
-	})
 
 	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
@@ -72,23 +83,20 @@ func TestGetRequestText(t *testing.T) {
 }
 
 func TestGetRequestJSON(t *testing.T) {
-	teardown := setup()
+	teardown := setupTestServer()
 	defer teardown()
 
 	testPath := "/json"
-
-	mux.HandleFunc(testPath, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
-	})
 
 	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.NR().SetHeader("Content-Type", "application/json").Execute("GET", testPath)
+	res, err := c.NR().
+		SetHeader("Content-Type", "application/json").
+		Execute("GET", testPath)
+
 	if err != nil {
 		t.Error("failed to request")
 	}
@@ -105,7 +113,7 @@ func TestGetRequestJSON(t *testing.T) {
 }
 
 func TestGetRequestWithParams(t *testing.T) {
-	teardown := setup()
+	teardown := setupTestServer()
 	defer teardown()
 
 	testPath := "/test/1"
@@ -114,18 +122,14 @@ func TestGetRequestWithParams(t *testing.T) {
 		"test2": 1,
 	}
 
-	mux.HandleFunc(testPath, func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
-	})
-
 	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.NR().SetParams(testParams).Execute("GET", "/:test1/:test2")
+	res, err := c.NR().
+		SetParams(testParams).
+		Execute("GET", "/:test1/:test2")
 	if err != nil {
 		t.Errorf("expected err to be nil got: %v", err)
 	}
