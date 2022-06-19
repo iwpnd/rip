@@ -16,14 +16,6 @@ type Header = map[string]string
 // Params ...
 type Params = map[string]interface{}
 
-// RequestOptions ...
-type RequestOptions struct {
-	Header Header
-	Params Params
-	Query  Query
-	Body   interface{}
-}
-
 // Query ...
 type Query = map[string]interface{}
 
@@ -36,7 +28,7 @@ type Request struct {
 	Result     interface{}
 	Body       io.Reader
 	URL        string
-	Options    RequestOptions
+	Params     Params
 	client     *Client
 }
 
@@ -44,7 +36,7 @@ type Request struct {
 func (r *Request) Execute(method, path string) (*Response, error) {
 	var err error
 
-	r.parsePath(path, r.Options.Params)
+	r.parsePath(path, r.Params)
 	r.parseURL()
 
 	r.RawRequest, err = http.NewRequest(method, r.URL, r.Body)
@@ -93,6 +85,13 @@ func (r *Request) parseQuery(query Query) {
 			break
 		}
 	}
+}
+
+// SetParams to replace in path
+func (r *Request) SetParams(params Params) *Request {
+	r.Params = params
+
+	return r
 }
 
 func (r *Request) parsePath(path string, params Params) {

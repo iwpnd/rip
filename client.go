@@ -36,14 +36,9 @@ func NewClient(host string, options ClientOptions) (*Client, error) {
 	return &Client{httpClient: &http.Client{Timeout: timeout}, baseURL: u, Options: options}, nil
 }
 
-// NewRequest creates a new request from RequestOptions
-func (c *Client) NewRequest(options RequestOptions) *Request {
-	req := &Request{client: c, Options: options}
-
-	req.parseHeader(options.Header)
-	req.parseBody(options.Body)
-
-	return req
+// NR creates a new request
+func (c *Client) NR() *Request {
+	return &Request{client: c}
 }
 
 func (c *Client) execute(req *Request) (*Response, error) {

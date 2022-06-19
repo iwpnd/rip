@@ -63,6 +63,7 @@ func TestParseParams(t *testing.T) {
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
 			r := &Request{}
+			r.SetParams(tc.params)
 			r.parsePath(tc.path, tc.params)
 
 			if r.Path != tc.expected {
@@ -122,7 +123,6 @@ func TestParseQueryParams(t *testing.T) {
 
 func TestSetHeader(t *testing.T) {
 	type tcase struct {
-		options   RequestOptions
 		key       string
 		keys      []string
 		value     string
@@ -131,18 +131,16 @@ func TestSetHeader(t *testing.T) {
 	}
 
 	tests := map[string]tcase{
-		"test single header without request options": {
-			options: RequestOptions{},
-			key:     "test",
-			value:   "test",
+		"test single header": {
+			key:   "test",
+			value: "test",
 			expHeader: http.Header{
 				"Test": []string{"test"},
 			},
 		},
-		"test multiple header without request options": {
-			options: RequestOptions{},
-			keys:    []string{"test1", "test2"},
-			values:  []string{"test", "test"},
+		"test multiple header": {
+			keys:   []string{"test1", "test2"},
+			values: []string{"test", "test"},
 			expHeader: http.Header{
 				"Test1": []string{"test"},
 				"Test2": []string{"test"},
@@ -152,7 +150,7 @@ func TestSetHeader(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
-			r := &Request{Options: tc.options}
+			r := &Request{}
 
 			if tc.key != "" && tc.value != "" {
 				r.SetHeader(tc.key, tc.value)
@@ -178,14 +176,12 @@ func TestSetHeader(t *testing.T) {
 
 func TestSetHeaders(t *testing.T) {
 	type tcase struct {
-		options     RequestOptions
 		inputHeader Header
 		expHeader   http.Header
 	}
 
 	tests := map[string]tcase{
 		"test multiple header without request options": {
-			options: RequestOptions{},
 			inputHeader: Header{
 				"test1": "test",
 				"test2": "test",
@@ -199,7 +195,7 @@ func TestSetHeaders(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
-			r := &Request{Options: tc.options}
+			r := &Request{}
 
 			r.SetHeaders(tc.inputHeader)
 
@@ -217,14 +213,12 @@ func TestSetHeaders(t *testing.T) {
 
 func TestSetQuery(t *testing.T) {
 	type tcase struct {
-		options  RequestOptions
 		query    Query
 		expQuery url.Values
 	}
 
 	tests := map[string]tcase{
 		"test set query": {
-			options: RequestOptions{},
 			query: Query{
 				"test1": "test",
 				"test2": "test",
@@ -238,7 +232,7 @@ func TestSetQuery(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
-			r := &Request{Options: tc.options}
+			r := &Request{}
 
 			r.SetQuery(tc.query)
 

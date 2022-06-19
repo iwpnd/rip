@@ -55,7 +55,7 @@ func TestGetRequestText(t *testing.T) {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.NewRequest(RequestOptions{}).Execute("GET", testPath)
+	res, err := c.NR().Execute("GET", testPath)
 	if err != nil {
 		t.Error("failed to request")
 	}
@@ -88,7 +88,7 @@ func TestGetRequestJSON(t *testing.T) {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.NewRequest(RequestOptions{}).SetHeader("Content-Type", "application/json").Execute("GET", testPath)
+	res, err := c.NR().SetHeader("Content-Type", "application/json").Execute("GET", testPath)
 	if err != nil {
 		t.Error("failed to request")
 	}
@@ -109,6 +109,10 @@ func TestGetRequestWithParams(t *testing.T) {
 	defer teardown()
 
 	testPath := "/test/1"
+	testParams := map[string]interface{}{
+		"test1": "test",
+		"test2": 1,
+	}
 
 	mux.HandleFunc(testPath, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -121,11 +125,7 @@ func TestGetRequestWithParams(t *testing.T) {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.NewRequest(RequestOptions{
-		Params: map[string]interface{}{
-			"test1": "test",
-			"test2": 1,
-		}}).Execute("GET", "/:test1/:test2")
+	res, err := c.NR().SetParams(testParams).Execute("GET", "/:test1/:test2")
 	if err != nil {
 		t.Errorf("expected err to be nil got: %v", err)
 	}
