@@ -50,11 +50,10 @@ type Request struct {
 func (r *Request) Execute(method, path string) (*Response, error) {
 	var err error
 
-	if r.Options.Params != nil {
-		r.parsePath(path, r.Options.Params)
-	}
-
+	r.parsePath(path, r.Options.Params)
 	r.parseURL()
+
+	fmt.Print(r.URL)
 
 	r.RawRequest, err = http.NewRequest(method, r.URL, r.Body)
 	if err != nil {
@@ -130,6 +129,30 @@ func (r *Request) parseHeader(header Header) {
 	}
 }
 
+// SetHeader to set a single header
+func (r *Request) SetHeader(key, value string) *Request {
+	if r.Header == nil {
+		r.Header = http.Header{}
+	}
+
+	r.Header.Add(key, value)
+
+	return r
+}
+
+// SetHeaders to set multiple header as map[string]string
+func (r *Request) SetHeaders(header Header) *Request {
+	if r.Header == nil {
+		r.Header = http.Header{}
+	}
+
+	for k, v := range header {
+		r.Header.Set(k, v)
+	}
+
+	return r
+}
+
 func (r *Request) parseBody(body interface{}) error {
 	if body == nil {
 		r.Body = nil
@@ -153,7 +176,7 @@ func (r *Request) parseBody(body interface{}) error {
 func (r *Request) parseURL() {
 	r.URL = r.client.baseURL.String() + r.Path
 
-	if r.QueryParams != nil {
-		r.URL = r.URL + r.QueryParams.Encode()
+	if r.QueryParams.Encode() != "" {
+		r.URL = r.URL + "?" + r.QueryParams.Encode()
 	}
 }
