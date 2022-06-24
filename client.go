@@ -1,6 +1,7 @@
 package rip
 
 import (
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"time"
@@ -55,6 +56,11 @@ func (c *Client) execute(req *Request) (*Response, error) {
 
 	response := &Response{
 		Request: req, RawResponse: resp,
+	}
+
+	response.body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return response, err
 	}
 
 	return response, nil

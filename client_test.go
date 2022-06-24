@@ -1,6 +1,7 @@
 package rip
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -31,11 +32,12 @@ func setupTestServer() func() {
 				case "/json":
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusOK)
-					_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
+					fmt.Fprint(w, fixture("response.json"))
 				case "/test/1":
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusOK)
-					_, _ = w.Write([]byte(`{"data":{"test":"test"}}`))
+					fmt.Fprint(w, fixture("response.json"))
+					// _, _ = w.Write([]byte(`{"data":{"user":"Ben","age":35}}`))
 				default:
 					return
 				}
@@ -133,6 +135,7 @@ func TestGetRequestWithParams(t *testing.T) {
 	if err != nil {
 		t.Errorf("expected err to be nil got: %v", err)
 	}
+	defer res.RawResponse.Body.Close()
 
 	expectedURL := ts.URL + testPath
 	if res.Request.URL != expectedURL {
@@ -142,4 +145,7 @@ func TestGetRequestWithParams(t *testing.T) {
 	if res.StatusCode() != 200 {
 		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
 	}
+
+	data := &TestResponseData{}
+	Unmarshal(res.Header().Get("Content-Type"), res.Body(), data)
 }

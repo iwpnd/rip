@@ -46,17 +46,12 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 
 	r.RawRequest.Header = r.Header
 
-	resp, err := r.client.httpClient.Do(r.RawRequest)
+	resp, err := r.client.execute(r)
 	if err != nil {
 		return &Response{}, err
 	}
 
-	response := &Response{
-		Request:     r,
-		RawResponse: resp,
-	}
-
-	return response, err
+	return resp, err
 }
 
 // SetQuery to set query parameters

@@ -2,6 +2,7 @@ package rip
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 )
 
@@ -21,6 +22,7 @@ func IsJSON(ct string) bool {
 func Unmarshal(ct string, b []byte, d interface{}) error {
 	if IsJSON(ct) {
 		err := json.Unmarshal(b, d)
+		fmt.Println(err)
 		return err
 	}
 
