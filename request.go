@@ -26,7 +26,7 @@ type Request struct {
 	Header     http.Header
 	Query      url.Values
 	Result     interface{}
-	Body       io.Reader
+	Body       interface{}
 	URL        string
 	Params     Params
 	client     *Client
@@ -39,7 +39,12 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	r.parsePath(path, r.Params)
 	r.parseURL()
 
-	r.RawRequest, err = http.NewRequest(method, r.URL, r.Body)
+	if rd, ok := r.Body.(io.Reader); ok {
+		r.RawRequest, err = http.NewRequest(method, r.URL, rd)
+	} else {
+		r.RawRequest, err = http.NewRequest(method, r.URL, nil)
+	}
+
 	if err != nil {
 		return &Response{}, err
 	}
@@ -146,24 +151,36 @@ func (r *Request) SetHeaders(header Header) *Request {
 	return r
 }
 
-func (r *Request) parseBody(body interface{}) error {
+// SetBody to set a request body
+func (r *Request) SetBody(body interface{}) *Request {
 	if body == nil {
-		r.Body = nil
+		return r
+	}
+
+	b := r.parseBody(body)
+	r.Body = b
+
+	return r
+}
+
+func (r *Request) parseBody(body interface{}) io.Reader {
+	if body == nil {
+		return nil
 	}
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {
-		return err
+		return nil
 	}
 
-	r.Body = bytes.NewBuffer(jsonBody)
+	b := bytes.NewBuffer(jsonBody)
 
 	contentType := r.Header.Get("Content-Type")
 	if !IsJSON(contentType) {
 		r.Header.Set("Content-Type", "application/json")
 	}
 
-	return nil
+	return b
 }
 
 func (r *Request) parseURL() {

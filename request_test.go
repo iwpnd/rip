@@ -247,3 +247,38 @@ func TestSetQuery(t *testing.T) {
 		t.Run(name, fn(tc))
 	}
 }
+
+func TestSetBody(t *testing.T) {
+	type tcase struct {
+		body         interface{}
+		expectedBody http.Header
+	}
+
+	type testBody struct {
+		Name string
+		Age  int
+	}
+
+	tests := map[string]tcase{
+		"test set body": {
+			body: testBody{Name: "test", Age: 19}},
+		"test string body": {
+			body: `{"data":{"test":"test"}}`},
+	}
+
+	fn := func(tc tcase) func(*testing.T) {
+		return func(t *testing.T) {
+			r := &Request{Header: http.Header{}}
+			r.SetBody(tc.body)
+
+			got := r.Body
+			if got == nil {
+				t.Errorf("should've set body")
+			}
+		}
+	}
+
+	for name, tc := range tests {
+		t.Run(name, fn(tc))
+	}
+}
