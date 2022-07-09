@@ -250,8 +250,7 @@ func TestSetQuery(t *testing.T) {
 
 func TestSetBody(t *testing.T) {
 	type tcase struct {
-		body         interface{}
-		expectedBody http.Header
+		body interface{}
 	}
 
 	type testBody struct {
