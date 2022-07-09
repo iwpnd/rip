@@ -19,10 +19,10 @@ jobs:
     - name: build
       run: go build . 
       
-    # - name: lint
-    #   uses: golangci/golangci-lint-action@v2.5.2
-    #   with:
-    #     version: latest
+    - name: lint
+      uses: golangci/golangci-lint-action@v2.5.2
+      with:
+        version: latest
     
     - name: test
       run: go test -v ./...
