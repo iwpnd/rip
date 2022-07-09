@@ -39,16 +39,19 @@ func NewClient(host string, options ClientOptions) (*Client, error) {
 
 // NR creates a new request
 func (c *Client) NR() *Request {
-	return &Request{client: c}
+	h := http.Header{}
+
+	// set default host header
+	if c.Options.Header != nil {
+		for k, v := range c.Options.Header {
+			h.Set(k, v)
+		}
+	}
+
+	return &Request{client: c, Header: h}
 }
 
 func (c *Client) execute(req *Request) (*Response, error) {
-	// overwrite req header with host header
-	if c.Options.Header != nil {
-		for k, v := range c.Options.Header {
-			req.RawRequest.Header.Set(k, v)
-		}
-	}
 	resp, err := c.httpClient.Do(req.RawRequest)
 	if err != nil {
 		return &Response{}, err
