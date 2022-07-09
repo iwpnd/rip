@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	plainTextType   = "text/plain; charset=utf-8"
-	jsonContentType = "application/json"
+	contentTypeTEXT = "text/plain; charset=utf-8"
+	contentTypeJSON = "application/json"
 
 	jsonCheck = regexp.MustCompile(`(?i:(application|text)/(json|.*\+json|json\-.*)(;|$))`)
 )

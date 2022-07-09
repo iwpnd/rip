@@ -30,13 +30,14 @@ func setupTestServer() func() {
 				switch r.URL.Path {
 				case "/text":
 					w.WriteHeader(http.StatusOK)
+					w.Header().Set("Content-Type", contentTypeTEXT)
 					fmt.Fprint(w, "TestGet: text response")
 				case "/json":
-					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprint(w, fixture("response.json"))
 				case "/test/1":
-					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprint(w, fixture("response.json"))
 				default:
@@ -45,7 +46,7 @@ func setupTestServer() func() {
 			case "POST":
 				switch r.URL.Path {
 				case "/test/2":
-					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusCreated)
 					body, err := ioutil.ReadAll(r.Body)
 					if err != nil {
@@ -62,7 +63,7 @@ func setupTestServer() func() {
 			case "PUT":
 				switch r.URL.Path {
 				case "/test/3":
-					w.Header().Set("Content-Type", "application/json")
+					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusCreated)
 					body, err := ioutil.ReadAll(r.Body)
 					if err != nil {
@@ -123,7 +124,6 @@ func TestGetRequestJSON(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
-	ct := "application/json"
 	path := "/json"
 	url := ts.URL + path
 
@@ -133,7 +133,7 @@ func TestGetRequestJSON(t *testing.T) {
 	}
 
 	res, err := c.NR().
-		SetHeader("Content-Type", ct).
+		SetHeader("Content-Type", contentTypeJSON).
 		Execute("GET", path)
 
 	if err != nil {
@@ -148,11 +148,12 @@ func TestGetRequestJSON(t *testing.T) {
 		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
 	}
 
-	if res.Request.RawRequest.Header.Get("Content-Type") != ct {
+	if res.Request.RawRequest.Header.Get("Content-Type") != contentTypeJSON {
 		t.Errorf("expected Content-Type: %v, got: %v",
-			ct, res.Request.RawRequest.Header.Get("Content-Type"),
+			contentTypeJSON, res.Request.RawRequest.Header.Get("Content-Type"),
 		)
 	}
+
 }
 
 func TestGetRequestWithParams(t *testing.T) {
@@ -226,6 +227,12 @@ func TestPostWithBody(t *testing.T) {
 		t.Errorf("expected status code 201, got: %v", res.StatusCode())
 	}
 
+	if res.Request.RawRequest.Header.Get("Content-Type") != contentTypeJSON {
+		t.Errorf("expected Content-Type: %v, got: %v",
+			contentTypeJSON, res.Request.RawRequest.Header.Get("Content-Type"),
+		)
+	}
+
 	r := &TestResponseData{}
 	err = Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
 	if err != nil {
@@ -264,6 +271,12 @@ func TestPutWithBody(t *testing.T) {
 
 	if res.StatusCode() != 201 {
 		t.Errorf("expected status code 201, got: %v", res.StatusCode())
+	}
+
+	if res.Request.RawRequest.Header.Get("Content-Type") != contentTypeJSON {
+		t.Errorf("expected Content-Type: %v, got: %v",
+			contentTypeJSON, res.Request.RawRequest.Header.Get("Content-Type"),
+		)
 	}
 
 	r := &TestResponseData{}

@@ -120,13 +120,6 @@ func (r *Request) parsePath(path string, params Params) {
 	}
 }
 
-func (r *Request) parseHeader(header Header) {
-	r.Header = http.Header{}
-	for k, v := range header {
-		r.Header.Set(k, v)
-	}
-}
-
 // SetHeader to set a single header
 func (r *Request) SetHeader(key, value string) *Request {
 	if r.Header == nil {
