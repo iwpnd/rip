@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 )
 
@@ -24,11 +25,12 @@ var (
 func setupTestServer() func() {
 	ts = httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			if r.Method == "GET" {
+			switch r.Method {
+			case "GET":
 				switch r.URL.Path {
 				case "/text":
 					w.WriteHeader(http.StatusOK)
-					_, _ = w.Write([]byte("TestGet: text response"))
+					fmt.Fprint(w, "TestGet: text response")
 				case "/json":
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusOK)
@@ -37,9 +39,42 @@ func setupTestServer() func() {
 					w.Header().Set("Content-Type", "application/json")
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprint(w, fixture("response.json"))
-					// _, _ = w.Write([]byte(`{"data":{"user":"Ben","age":35}}`))
 				default:
 					return
+				}
+			case "POST":
+				switch r.URL.Path {
+				case "/test/2":
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusCreated)
+					body, err := ioutil.ReadAll(r.Body)
+					if err != nil {
+						http.Error(w, "can't read body", http.StatusBadRequest)
+						return
+					}
+					res, err := strconv.Unquote(string(body))
+					if err != nil {
+						http.Error(w, "can't read body", http.StatusBadRequest)
+						return
+					}
+					fmt.Fprint(w, res)
+				}
+			case "PUT":
+				switch r.URL.Path {
+				case "/test/3":
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(http.StatusCreated)
+					body, err := ioutil.ReadAll(r.Body)
+					if err != nil {
+						http.Error(w, "can't read body", http.StatusBadRequest)
+						return
+					}
+					res, err := strconv.Unquote(string(body))
+					if err != nil {
+						http.Error(w, "can't read body", http.StatusBadRequest)
+						return
+					}
+					fmt.Fprint(w, res)
 				}
 			}
 		}))
@@ -61,22 +96,22 @@ func TestGetRequestText(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
-	testPath := "/text"
+	path := "/text"
+	url := ts.URL + path
 
 	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
 		t.Error("Cannot initialize client")
 	}
 
-	res, err := c.NR().Execute("GET", testPath)
+	res, err := c.NR().Execute("GET", path)
 	if err != nil {
 		t.Error("failed to request")
 	}
 	defer res.RawResponse.Body.Close()
 
-	expectedURL := ts.URL + testPath
-	if res.Request.URL != expectedURL {
-		t.Errorf("expected: %v, got: %v", expectedURL, res.Request.URL)
+	if res.Request.URL != url {
+		t.Errorf("expected: %v, got: %v", url, res.Request.URL)
 	}
 
 	if res.StatusCode() != 200 {
@@ -88,7 +123,9 @@ func TestGetRequestJSON(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
-	testPath := "/json"
+	ct := "application/json"
+	path := "/json"
+	url := ts.URL + path
 
 	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
@@ -96,21 +133,25 @@ func TestGetRequestJSON(t *testing.T) {
 	}
 
 	res, err := c.NR().
-		SetHeader("Content-Type", "application/json").
-		Execute("GET", testPath)
+		SetHeader("Content-Type", ct).
+		Execute("GET", path)
 
 	if err != nil {
 		t.Error("failed to request")
 	}
-	defer res.RawResponse.Body.Close()
 
-	expectedURL := ts.URL + testPath
-	if res.Request.URL != expectedURL {
-		t.Errorf("expected: %v, got: %v", expectedURL, res.Request.URL)
+	if res.Request.URL != url {
+		t.Errorf("expected: %v, got: %v", url, res.Request.URL)
 	}
 
 	if res.StatusCode() != 200 {
 		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
+	}
+
+	if res.Request.RawRequest.Header.Get("Content-Type") != ct {
+		t.Errorf("expected Content-Type: %v, got: %v",
+			ct, res.Request.RawRequest.Header.Get("Content-Type"),
+		)
 	}
 }
 
@@ -118,11 +159,12 @@ func TestGetRequestWithParams(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
-	testPath := "/test/1"
-	testParams := map[string]interface{}{
+	path := "/test/1"
+	params := map[string]interface{}{
 		"test1": "test",
 		"test2": 1,
 	}
+	url := ts.URL + path
 
 	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
@@ -130,22 +172,103 @@ func TestGetRequestWithParams(t *testing.T) {
 	}
 
 	res, err := c.NR().
-		SetParams(testParams).
+		SetParams(params).
 		Execute("GET", "/:test1/:test2")
 	if err != nil {
 		t.Errorf("expected err to be nil got: %v", err)
 	}
-	defer res.RawResponse.Body.Close()
 
-	expectedURL := ts.URL + testPath
-	if res.Request.URL != expectedURL {
-		t.Errorf("expected: %v, got: %v", expectedURL, res.Request.URL)
+	if res.Request.URL != url {
+		t.Errorf("expected: %v, got: %v", url, res.Request.URL)
 	}
 
 	if res.StatusCode() != 200 {
 		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
 	}
 
-	data := &TestResponseData{}
-	Unmarshal(res.Header().Get("Content-Type"), res.Body(), data)
+	r := &TestResponseData{}
+	err = Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
+	if err != nil {
+		t.Error("failed to unmarshal response", err)
+	}
+}
+
+func TestPostWithBody(t *testing.T) {
+	teardown := setupTestServer()
+	defer teardown()
+
+	path := "/:path/:id"
+	params := map[string]interface{}{
+		"path": "test",
+		"id":   2,
+	}
+	url := ts.URL + "/test/2"
+	body := fixture("response.json")
+
+	c, err := NewClient(ts.URL, ClientOptions{})
+	if err != nil {
+		t.Error("Cannot initialize client")
+	}
+
+	res, err := c.NR().
+		SetParams(params).
+		SetBody(body).
+		Execute("POST", path)
+	if err != nil {
+		t.Errorf("expected err to be nil got: %v", err)
+	}
+
+	if res.Request.URL != url {
+		t.Errorf("expected url: %v, got: %v", url, res.Request.URL)
+	}
+
+	if res.StatusCode() != 201 {
+		t.Errorf("expected status code 201, got: %v", res.StatusCode())
+	}
+
+	r := &TestResponseData{}
+	err = Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
+	if err != nil {
+		t.Error("failed to unmarshal response", err)
+	}
+}
+
+func TestPutWithBody(t *testing.T) {
+	teardown := setupTestServer()
+	defer teardown()
+
+	path := "/:path/:id"
+	params := map[string]interface{}{
+		"path": "test",
+		"id":   3,
+	}
+	url := ts.URL + "/test/3"
+	body := fixture("response.json")
+
+	c, err := NewClient(ts.URL, ClientOptions{})
+	if err != nil {
+		t.Error("Cannot initialize client")
+	}
+
+	res, err := c.NR().
+		SetParams(params).
+		SetBody(body).
+		Execute("PUT", path)
+	if err != nil {
+		t.Errorf("expected err to be nil got: %v", err)
+	}
+
+	if res.Request.URL != url {
+		t.Errorf("expected url: %v, got: %v", url, res.Request.URL)
+	}
+
+	if res.StatusCode() != 201 {
+		t.Errorf("expected status code 201, got: %v", res.StatusCode())
+	}
+
+	r := &TestResponseData{}
+	err = Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
+	if err != nil {
+		t.Error("failed to unmarshal response", err)
+	}
 }
