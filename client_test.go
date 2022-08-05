@@ -124,6 +124,16 @@ func setupTestServer() func() {
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusNotFound)
 				}
+			case "DELETE":
+				switch r.URL.Path {
+				case "/test/1/2":
+					w.Header().Set("Content-Type", contentTypeJSON)
+					w.WriteHeader(http.StatusOK)
+					fmt.Fprint(w, string([]byte(`"{"ok":true}"`)))
+				default:
+					w.Header().Set("Content-Type", contentTypeJSON)
+					w.WriteHeader(http.StatusNotFound)
+				}
 			}
 		}))
 
@@ -297,6 +307,22 @@ func TestClientRequests(t *testing.T) {
 			Method:        "PUT",
 			Path:          "/test/fails",
 			Body:          fixture("response.json"),
+			expPath:       "/test/fails",
+			expStatusCode: 404,
+		},
+		"DELETE": {
+			Method: "DELETE",
+			Path:   "/test/:id1/:id2",
+			Params: Params{
+				"id1": "1",
+				"id2": "2",
+			},
+			expPath:       "/test/1/2",
+			expStatusCode: 200,
+		},
+		"DELETE fails": {
+			Method:        "DELETE",
+			Path:          "/test/fails",
 			expPath:       "/test/fails",
 			expStatusCode: 404,
 		},
