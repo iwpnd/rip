@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 )
 
-type TestResponse struct {
-	User string `json:"user"`
+type User struct {
+	Name string `json:"name"`
 	Age  int    `json:"age"`
 }
 
-type TestResponseData struct {
-	Data TestResponse `json:"data"`
+type Payload struct {
+	Data User `json:"data"`
 }
 
 var (
@@ -28,15 +29,24 @@ func setupTestServer() func() {
 			switch r.Method {
 			case "GET":
 				switch r.URL.Path {
-				case "/text":
-					w.WriteHeader(http.StatusOK)
-					w.Header().Set("Content-Type", contentTypeTEXT)
-					fmt.Fprint(w, "TestGet: text response")
-				case "/json":
-					w.Header().Set("Content-Type", contentTypeJSON)
-					w.WriteHeader(http.StatusOK)
-					fmt.Fprint(w, fixture("response.json"))
-				case "/test/1":
+				case "/test":
+					{
+						accept := r.Header.Get("Accept")
+						switch accept {
+						case contentTypeJSON:
+							w.Header().Set("Content-Type", contentTypeJSON)
+							w.WriteHeader(http.StatusOK)
+							fmt.Fprint(w, fixture("response.json"))
+						case contentTypeTEXT:
+							w.WriteHeader(http.StatusOK)
+							w.Header().Set("Content-Type", contentTypeTEXT)
+							fmt.Fprint(w, "text response")
+						default:
+							w.WriteHeader(http.StatusNotAcceptable)
+							fmt.Fprint(w, "nope")
+						}
+					}
+				case "/test/1/2":
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusOK)
 					fmt.Fprint(w, fixture("response.json"))
@@ -90,108 +100,106 @@ func fixture(path string) string {
 	if err != nil {
 		panic(err)
 	}
-	return string(b)
+	return strings.TrimSpace(string(b))
 }
 
-func TestGetRequestText(t *testing.T) {
+func TestClientGET(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
-	path := "/text"
-	url := ts.URL + path
+	type TCase struct {
+		Method        string
+		Path          string
+		Params        Params
+		Headers       Header
+		Body          []byte
+		expPath       string
+		expStatusCode int
+		expBody       interface{}
+	}
 
 	c, err := NewClient(ts.URL, ClientOptions{})
 	if err != nil {
-		t.Error("Cannot initialize client")
+		t.Error("could not initialize client")
 	}
 
-	res, err := c.NR().Execute("GET", path)
-	if err != nil {
-		t.Error("failed to request")
-	}
-	defer res.RawResponse.Body.Close()
+	fn := func(tc TCase) func(*testing.T) {
+		return func(t *testing.T) {
+			req := c.NR()
 
-	if res.Request.URL != url {
-		t.Errorf("expected: %v, got: %v", url, res.Request.URL)
-	}
+			if tc.Headers != nil {
+				req.SetHeaders(tc.Headers)
+			}
 
-	if res.StatusCode() != 200 {
-		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
-	}
-}
+			if tc.Params != nil {
+				req.SetParams(tc.Params)
+			}
 
-func TestGetRequestJSON(t *testing.T) {
-	teardown := setupTestServer()
-	defer teardown()
+			res, err := req.Execute(tc.Method, tc.Path)
+			if err != nil {
+				t.Error("failed to request")
+			}
+			defer res.RawResponse.Body.Close()
 
-	path := "/json"
-	url := ts.URL + path
+			if res.Request.URL != ts.URL+tc.expPath {
+				t.Errorf("expected: %v, got: %v", ts.URL+tc.expPath, res.Request.URL)
+			}
 
-	c, err := NewClient(ts.URL, ClientOptions{})
-	if err != nil {
-		t.Error("Cannot initialize client")
-	}
+			if res.StatusCode() != tc.expStatusCode {
+				t.Errorf("expected StatusCode %v, got: %v", tc.expStatusCode, res.StatusCode())
+			}
 
-	res, err := c.NR().
-		SetHeader("Content-Type", contentTypeJSON).
-		Execute("GET", path)
+			if tc.expBody != nil {
+				if res.String() != tc.expBody {
+					t.Errorf("failed. Response \n\n %+v \n\n does not match expected response \n\n %+v \n\n", res.String(), tc.expBody)
+					return
 
-	if err != nil {
-		t.Error("failed to request")
-	}
-
-	if res.Request.URL != url {
-		t.Errorf("expected: %v, got: %v", url, res.Request.URL)
+				}
+			}
+		}
 	}
 
-	if res.StatusCode() != 200 {
-		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
+	tests := map[string]TCase{
+		"GET text": {
+			Method: "GET",
+			Path:   "/test",
+			Headers: map[string]string{
+				"Accept": contentTypeTEXT,
+			},
+			expPath:       "/test",
+			expStatusCode: 200,
+			expBody:       "text response",
+		},
+		"GET json": {
+			Method: "GET",
+			Path:   "/test",
+			Headers: map[string]string{
+				"Accept": contentTypeJSON,
+			},
+			expPath:       "/test",
+			expStatusCode: 200,
+			expBody:       fixture("response.json"),
+		},
+		"GET json resolve params": {
+			Method: "GET",
+			Path:   "/test/:id1/:id2",
+			Params: Params{
+				"id1": "1",
+				"id2": "2",
+			},
+			Headers: map[string]string{
+				"Accept": contentTypeJSON,
+			},
+			expPath:       "/test/1/2",
+			expBody:       fixture("response.json"),
+			expStatusCode: 200,
+		},
 	}
 
-	if res.Request.RawRequest.Header.Get("Content-Type") != contentTypeJSON {
-		t.Errorf("expected Content-Type: %v, got: %v",
-			contentTypeJSON, res.Request.RawRequest.Header.Get("Content-Type"),
-		)
+	for name, tc := range tests {
+		t.Run(name, fn(tc))
 	}
 
-}
-
-func TestGetRequestWithParams(t *testing.T) {
-	teardown := setupTestServer()
-	defer teardown()
-
-	path := "/test/1"
-	params := map[string]interface{}{
-		"test1": "test",
-		"test2": 1,
-	}
-	url := ts.URL + path
-
-	c, err := NewClient(ts.URL, ClientOptions{})
-	if err != nil {
-		t.Error("Cannot initialize client")
-	}
-
-	res, err := c.NR().
-		SetParams(params).
-		Execute("GET", "/:test1/:test2")
-	if err != nil {
-		t.Errorf("expected err to be nil got: %v", err)
-	}
-
-	if res.Request.URL != url {
-		t.Errorf("expected: %v, got: %v", url, res.Request.URL)
-	}
-
-	if res.StatusCode() != 200 {
-		t.Errorf("expected StatusCode 200, got: %v", res.StatusCode())
-	}
-
-	r := &TestResponseData{}
-	err = Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
-	if err != nil {
-		t.Error("failed to unmarshal response", err)
-	}
 }
 
 func TestPostWithBody(t *testing.T) {
@@ -233,7 +241,7 @@ func TestPostWithBody(t *testing.T) {
 		)
 	}
 
-	r := &TestResponseData{}
+	r := &Payload{}
 	err = Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
 	if err != nil {
 		t.Error("failed to unmarshal response", err)
@@ -279,7 +287,7 @@ func TestPutWithBody(t *testing.T) {
 		)
 	}
 
-	r := &TestResponseData{}
+	r := &Payload{}
 	err = Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
 	if err != nil {
 		t.Error("failed to unmarshal response", err)

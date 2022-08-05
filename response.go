@@ -47,7 +47,7 @@ func (r *Response) String() string {
 	return strings.TrimSpace(string(r.body))
 }
 
-// Body returns Body as byte array if possible
+// Body returns Body as byte array
 func (r *Response) Body() []byte {
 	if r.body == nil {
 		return []byte{}

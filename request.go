@@ -21,15 +21,15 @@ type Query = map[string]interface{}
 
 // Request ...
 type Request struct {
-	Path       string
-	RawRequest *http.Request
+	Body       interface{}
 	Header     http.Header
+	Params     Params
+	Path       string
 	Query      url.Values
 	Result     interface{}
-	Body       interface{}
 	URL        string
-	Params     Params
 	client     *Client
+	RawRequest *http.Request
 }
 
 // Execute executes a given request using a method on a given path
@@ -54,6 +54,7 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	resp, err := r.client.execute(r)
 	if err != nil {
 		return &Response{}, err
+
 	}
 
 	return resp, err
