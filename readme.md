@@ -11,10 +11,9 @@ go get -u github.com/iwpnd/rip
 ## Usage
 
 ```go
-package blogclient
+package main
 
 import (
-  "fmt"
   "encoding/json"
 
   "github.com/iwpnd/rip"
@@ -38,10 +37,9 @@ func NewBlogApiClient(host string, options rip.ClientOptions) (*BlogApiClient, e
 }
 
 func (c *BlogApiClient) GetById(id string) (*BlogPost, error) {
-    req, err := c.NR()
-
-    req.SetHeader("Accept", "application/json")
-    req.SetParams(Params{"id": id})
+    req, err := c.NR().
+        SetHeader("Accept", "application/json").
+	SetParams(Params{"id": "1"})
 
     res, err := req.Execute("GET", "/blog/:id")
     if err != nil {
@@ -49,10 +47,10 @@ func (c *BlogApiClient) GetById(id string) (*BlogPost, error) {
     }
 
     b := &BlogPost{}
-	  err = rip.Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
-	  if err != nil {
-		    return &BlogPost, err
-	  }
+    err = rip.Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
+    if err != nil {
+        return &BlogPost, err
+    }
 
     return b
 }
@@ -63,26 +61,42 @@ func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
         return &BlogPost, err
     }
 
-    req, err := c.NR()
+    req := c.NR().
+        SetHeaders(rip.Header{
+	    "Content-Type": "application/json",
+	    "Accept":       "application/json",
+	}).
+	SetBody(b)
 
-    req.SetHeaders(Headers{
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    })
-    req.SetBody(b)
 
     res, err := req.Execute("POST", "/blog")
     if err != nil {
         return &Response{}, err
     }
 
-    b := &BlogPost{}
-	  err = rip.Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
-	  if err != nil {
-		    return &BlogPost, err
-	  }
+    b := &BlogPost{} 
+    err = rip.Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
+    if err != nil {
+        return &BlogPost, err
+    }
 
     return b
+}
+
+func main() {
+    co := rip.ClientOptions{Header: rip.Header{"x-api-key": os.Getenv("API_KEY_BLOGAPI")}}
+    c, err := NewBlogApiClient(ts.URL, co)
+    if err != nil {
+        panic("AAAH!")
+    }
+
+    b, err := c.GetById(id)
+    if err != nil {
+        t.Errorf("could not get blogpost for id %v :(", id)
+    }
+
+    fmt.Printf("blogpost: \n %v\n\n", b)
+
 }
 ```
 
