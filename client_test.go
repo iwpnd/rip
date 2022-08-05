@@ -10,15 +10,6 @@ import (
 	"testing"
 )
 
-type User struct {
-	Name string `json:"name"`
-	Age  int    `json:"age"`
-}
-
-type Payload struct {
-	Data User `json:"data"`
-}
-
 type TCase struct {
 	Method        string
 	Path          string
@@ -149,7 +140,7 @@ func fixture(path string) string {
 	return strings.TrimSpace(string(b))
 }
 
-func TestClientGET(t *testing.T) {
+func TestClientRequests(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
@@ -168,6 +159,10 @@ func TestClientGET(t *testing.T) {
 
 			if tc.Params != nil {
 				req.SetParams(tc.Params)
+			}
+
+			if tc.Body != "" {
+				req.SetBody(tc.Body)
 			}
 
 			res, err := req.Execute(tc.Method, tc.Path)
@@ -235,64 +230,6 @@ func TestClientGET(t *testing.T) {
 			expPath:       "/test/fails",
 			expStatusCode: 404,
 		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, fn(tc))
-	}
-
-}
-
-func TestClientPOST(t *testing.T) {
-	teardown := setupTestServer()
-	defer teardown()
-
-	c, err := NewClient(ts.URL, ClientOptions{})
-	if err != nil {
-		t.Error("could not initialize client")
-	}
-
-	fn := func(tc TCase) func(*testing.T) {
-		return func(t *testing.T) {
-			req := c.NR()
-
-			if tc.Headers != nil {
-				req.SetHeaders(tc.Headers)
-			}
-
-			if tc.Params != nil {
-				req.SetParams(tc.Params)
-			}
-
-			if tc.Body != "" {
-				req.SetBody(tc.Body)
-			}
-
-			res, err := req.Execute(tc.Method, tc.Path)
-			if err != nil {
-				t.Error("failed to request")
-			}
-			defer res.RawResponse.Body.Close()
-
-			if res.Request.URL != ts.URL+tc.expPath {
-				t.Errorf("\n\n expected: %v, got: %v \n\n", ts.URL+tc.expPath, res.Request.URL)
-			}
-
-			if res.StatusCode() != tc.expStatusCode {
-				t.Errorf("\n\n expected StatusCode %v, got: %v \n\n", tc.expStatusCode, res.StatusCode())
-			}
-
-			if tc.expBody != nil {
-				if res.String() != tc.expBody {
-					t.Errorf("failed. Response \n\n %+v \n\n does not match expected response \n\n %+v \n\n", res.String(), tc.expBody)
-					return
-
-				}
-			}
-		}
-	}
-
-	tests := map[string]TCase{
 		"POST json": {
 			Method: "POST",
 			Path:   "/test",
@@ -328,63 +265,6 @@ func TestClientPOST(t *testing.T) {
 			expPath:       "/test/fails",
 			expStatusCode: 404,
 		},
-	}
-
-	for name, tc := range tests {
-		t.Run(name, fn(tc))
-	}
-}
-
-func TestClientPUT(t *testing.T) {
-	teardown := setupTestServer()
-	defer teardown()
-
-	c, err := NewClient(ts.URL, ClientOptions{})
-	if err != nil {
-		t.Error("could not initialize client")
-	}
-
-	fn := func(tc TCase) func(*testing.T) {
-		return func(t *testing.T) {
-			req := c.NR()
-
-			if tc.Headers != nil {
-				req.SetHeaders(tc.Headers)
-			}
-
-			if tc.Params != nil {
-				req.SetParams(tc.Params)
-			}
-
-			if tc.Body != "" {
-				req.SetBody(tc.Body)
-			}
-
-			res, err := req.Execute(tc.Method, tc.Path)
-			if err != nil {
-				t.Error("failed to request")
-			}
-			defer res.RawResponse.Body.Close()
-
-			if res.Request.URL != ts.URL+tc.expPath {
-				t.Errorf("\n\n expected: %v, got: %v \n\n", ts.URL+tc.expPath, res.Request.URL)
-			}
-
-			if res.StatusCode() != tc.expStatusCode {
-				t.Errorf("\n\n expected StatusCode %v, got: %v \n\n", tc.expStatusCode, res.StatusCode())
-			}
-
-			if tc.expBody != nil {
-				if res.String() != tc.expBody {
-					t.Errorf("failed. Response \n\n %+v \n\n does not match expected response \n\n %+v \n\n", res.String(), tc.expBody)
-					return
-
-				}
-			}
-		}
-	}
-
-	tests := map[string]TCase{
 		"PUT json": {
 			Method: "PUT",
 			Path:   "/test",
@@ -425,4 +305,5 @@ func TestClientPUT(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, fn(tc))
 	}
+
 }
