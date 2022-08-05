@@ -154,7 +154,11 @@ func TestClientRequests(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
-	c, err := NewClient(ts.URL, ClientOptions{})
+	c, err := NewClient(ts.URL, ClientOptions{
+		Header: map[string]string{
+			"x-api-key": "api-key-test",
+		},
+	})
 	if err != nil {
 		t.Error("could not initialize client")
 	}
@@ -189,6 +193,21 @@ func TestClientRequests(t *testing.T) {
 				t.Errorf("\n\n expected StatusCode %v, got: %v \n\n", tc.expStatusCode, res.StatusCode())
 			}
 
+			if tc.Headers != nil {
+				for k, v := range tc.Headers {
+					h := res.Request.RawRequest.Header.Get(k)
+					if h == "" {
+						t.Errorf("\n\n Expected request header %v to be %v \n\n, got: %v", k, v, h)
+					}
+
+					if k == "x-api-key" {
+						if h != tc.Headers[k] {
+							t.Errorf("\n\n Expected default x-api-key to be overwritten \n\n")
+						}
+					}
+				}
+			}
+
 			if tc.expBody != nil {
 				if res.String() != tc.expBody {
 					t.Errorf("failed. Response \n\n %+v \n\n does not match expected response \n\n %+v \n\n", res.String(), tc.expBody)
@@ -215,6 +234,17 @@ func TestClientRequests(t *testing.T) {
 			Path:   "/test",
 			Headers: map[string]string{
 				"Accept": contentTypeJSON,
+			},
+			expPath:       "/test",
+			expStatusCode: 200,
+			expBody:       fixture("response.json"),
+		},
+		"GET json should not overwrite x-api-key": {
+			Method: "GET",
+			Path:   "/test",
+			Headers: map[string]string{
+				"Accept":    contentTypeJSON,
+				"x-api-key": "should-overwrite-default",
 			},
 			expPath:       "/test",
 			expStatusCode: 200,
@@ -331,5 +361,4 @@ func TestClientRequests(t *testing.T) {
 	for name, tc := range tests {
 		t.Run(name, fn(tc))
 	}
-
 }
