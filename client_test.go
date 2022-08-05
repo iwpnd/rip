@@ -10,15 +10,16 @@ import (
 	"testing"
 )
 
-type TCase struct {
-	Method        string
-	Path          string
-	Params        Params
-	Headers       Header
+type tcase struct {
 	Body          string
+	Headers       Header
+	Method        string
+	Params        Params
+	Path          string
+	Query         Query
+	expBody       interface{}
 	expPath       string
 	expStatusCode int
-	expBody       interface{}
 }
 
 var (
@@ -163,7 +164,7 @@ func TestClientRequests(t *testing.T) {
 		t.Error("could not initialize client")
 	}
 
-	fn := func(tc TCase) func(*testing.T) {
+	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
 			req := c.NR()
 
@@ -173,6 +174,10 @@ func TestClientRequests(t *testing.T) {
 
 			if tc.Params != nil {
 				req.SetParams(tc.Params)
+			}
+
+			if tc.Query != nil {
+				req.SetQuery(tc.Query)
 			}
 
 			if tc.Body != "" {
@@ -191,6 +196,15 @@ func TestClientRequests(t *testing.T) {
 
 			if res.StatusCode() != tc.expStatusCode {
 				t.Errorf("\n\n expected StatusCode %v, got: %v \n\n", tc.expStatusCode, res.StatusCode())
+			}
+
+			if tc.Query != nil {
+				for k, v := range tc.Query {
+					q := res.Request.RawRequest.URL.Query().Get(k)
+					if q != fmt.Sprintf("%v", v) {
+						t.Errorf("\n\n expected query param %v to be %v, got value %v \n\n", k, q, v)
+					}
+				}
 			}
 
 			if tc.Headers != nil {
@@ -218,7 +232,7 @@ func TestClientRequests(t *testing.T) {
 		}
 	}
 
-	tests := map[string]TCase{
+	tests := map[string]tcase{
 		"GET text": {
 			Method: "GET",
 			Path:   "/test",
@@ -235,6 +249,7 @@ func TestClientRequests(t *testing.T) {
 			Headers: map[string]string{
 				"Accept": contentTypeJSON,
 			},
+			Query:         Query{"test": 1},
 			expPath:       "/test",
 			expStatusCode: 200,
 			expBody:       fixture("response.json"),

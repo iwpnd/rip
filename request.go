@@ -3,12 +3,16 @@ package rip
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
 )
+
+// ErrClientMissing occurs when Request is instantiated without Client.NR()
+var ErrClientMissing = errors.New("use .NR() to create a new request instead")
 
 // Header ...
 type Header = map[string]string
@@ -26,7 +30,7 @@ type Request struct {
 	Params     Params
 	Path       string
 	Query      url.Values
-	Result     interface{}
+	Result     interface{} // NOTE: can I pass struct here to unmarshal resp body to?
 	URL        string
 	client     *Client
 	RawRequest *http.Request
@@ -34,6 +38,10 @@ type Request struct {
 
 // Execute executes a given request using a method on a given path
 func (r *Request) Execute(method, path string) (*Response, error) {
+	if r.client == nil {
+		return &Response{}, ErrClientMissing
+	}
+
 	var err error
 
 	r.parsePath(path, r.Params)
@@ -50,6 +58,10 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	}
 
 	r.RawRequest.Header = r.Header
+
+	if r.Query != nil {
+		r.RawRequest.URL.RawQuery = r.Query.Encode()
+	}
 
 	resp, err := r.client.execute(r)
 	if err != nil {
@@ -157,6 +169,7 @@ func (r *Request) SetBody(body interface{}) *Request {
 	return r
 }
 
+// NOTE: rn expected json only
 func (r *Request) parseBody(body interface{}) io.Reader {
 	if body == nil {
 		return nil
@@ -180,7 +193,7 @@ func (r *Request) parseBody(body interface{}) io.Reader {
 func (r *Request) parseURL() {
 	r.URL = r.client.baseURL.String() + r.Path
 
-	if r.Query.Encode() != "" {
-		r.URL = r.URL + "?" + r.Query.Encode()
-	}
+	// if r.Query.Encode() != "" {
+	// 	r.URL = r.URL + "?" + r.Query.Encode()
+	// }
 }

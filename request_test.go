@@ -7,6 +7,19 @@ import (
 	"testing"
 )
 
+func TestErrClientMissing(t *testing.T) {
+	r := &Request{}
+
+	_, err := r.Execute("GET", "/fails-anyways")
+	if err == nil {
+		t.Error("should've failed")
+	}
+
+	if err != ErrClientMissing {
+		t.Error("should've been ErrClientMissing")
+	}
+}
+
 func TestParseParams(t *testing.T) {
 	type tcase struct {
 		path     string
