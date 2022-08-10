@@ -7,34 +7,64 @@ import (
 	"time"
 )
 
-const defaultTimeOut = 4
+const defaultTimeout = time.Duration(4) * time.Second
+
+// Option ...
+type Option func(*Client)
 
 // ClientOptions ...
 type ClientOptions struct {
 	Header  Header
-	Timeout int
+	Timeout time.Duration
 }
 
 // Client ...
 type Client struct {
 	httpClient *http.Client
 	baseURL    *url.URL
-	Options    ClientOptions
+	options    *ClientOptions
+	Header     Header
+}
+
+// WithTimeout sets timeout in seconds on rips httpClient
+func WithTimeout(timeout time.Duration) Option {
+	return func(c *Client) {
+		c.options.Timeout = time.Duration(timeout)
+		timeout = time.Duration(timeout) * time.Second
+
+		c.httpClient = &http.Client{Timeout: timeout}
+	}
+}
+
+// WithDefaultHeaders sets client default headers (e.g. x-api-key)
+func WithDefaultHeaders(headers Header) Option {
+	return func(c *Client) {
+		c.options.Header = headers
+	}
 }
 
 // NewClient creates a new Client
-func NewClient(host string, options ClientOptions) (*Client, error) {
+func NewClient(host string, options ...Option) (*Client, error) {
 	u, err := url.Parse(host)
 	if err != nil {
 		return &Client{}, err
 	}
 
-	timeout := time.Duration(defaultTimeOut) * time.Second
-	if options.Timeout != 0 {
-		timeout = time.Duration(options.Timeout) * time.Second
+	client := &Client{
+		baseURL: u,
+		options: &ClientOptions{},
+		httpClient: &http.Client{
+			Timeout: defaultTimeout,
+		},
 	}
 
-	return &Client{httpClient: &http.Client{Timeout: timeout}, baseURL: u, Options: options}, nil
+	client.options.Timeout = defaultTimeout
+
+	for _, option := range options {
+		option(client)
+	}
+
+	return client, nil
 }
 
 // NR creates a new request
@@ -42,8 +72,8 @@ func (c *Client) NR() *Request {
 	h := http.Header{}
 
 	// set default host header
-	if c.Options.Header != nil {
-		for k, v := range c.Options.Header {
+	if c.options.Header != nil {
+		for k, v := range c.options.Header {
 			h.Set(k, v)
 		}
 	}

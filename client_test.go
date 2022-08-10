@@ -151,15 +151,60 @@ func fixture(path string) string {
 	return strings.TrimSpace(string(b))
 }
 
+func TestClientWithOptions(t *testing.T) {
+	teardown := setupTestServer()
+	defer teardown()
+
+	c, err := NewClient(ts.URL,
+		WithDefaultHeaders(map[string]string{
+			"x-api-key": "api-key-test",
+		}),
+		WithTimeout(30),
+	)
+
+	if err != nil {
+		t.Error("could not initialize client")
+	}
+
+	if c.options.Timeout == defaultTimeout {
+		t.Error("should not be defaultTimeout")
+	}
+
+	if c.options.Header == nil {
+		t.Error("should not be nil Header")
+	}
+}
+
+func TestClientWithoutOptions(t *testing.T) {
+	teardown := setupTestServer()
+	defer teardown()
+
+	c, err := NewClient(ts.URL)
+
+	if err != nil {
+		t.Error("could not initialize client")
+	}
+
+	if c.options.Timeout != defaultTimeout {
+		t.Errorf("should be defaultTimeout, got %v", c.options.Timeout)
+	}
+
+	if c.options.Header != nil {
+		t.Error("should be nil Header")
+	}
+}
+
 func TestClientRequests(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
-	c, err := NewClient(ts.URL, ClientOptions{
-		Header: map[string]string{
+	c, err := NewClient(ts.URL,
+		WithDefaultHeaders(map[string]string{
 			"x-api-key": "api-key-test",
-		},
-	})
+		}),
+		WithTimeout(30),
+	)
+
 	if err != nil {
 		t.Error("could not initialize client")
 	}
