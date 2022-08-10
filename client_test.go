@@ -2,9 +2,10 @@ package rip
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -62,7 +63,7 @@ func setupTestServer() func() {
 				case "/test":
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusCreated)
-					body, err := ioutil.ReadAll(r.Body)
+					body, err := io.ReadAll(r.Body)
 					if err != nil {
 						http.Error(w, "can't read body", http.StatusBadRequest)
 						return
@@ -76,7 +77,7 @@ func setupTestServer() func() {
 				case "/test/1/2":
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusCreated)
-					body, err := ioutil.ReadAll(r.Body)
+					body, err := io.ReadAll(r.Body)
 					if err != nil {
 						http.Error(w, "can't read body", http.StatusBadRequest)
 						return
@@ -96,7 +97,7 @@ func setupTestServer() func() {
 				case "/test":
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusOK)
-					body, err := ioutil.ReadAll(r.Body)
+					body, err := io.ReadAll(r.Body)
 					if err != nil {
 						http.Error(w, "can't read body", http.StatusBadRequest)
 						return
@@ -110,7 +111,7 @@ func setupTestServer() func() {
 				case "/test/1/2":
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusOK)
-					body, err := ioutil.ReadAll(r.Body)
+					body, err := io.ReadAll(r.Body)
 					if err != nil {
 						http.Error(w, "can't read body", http.StatusBadRequest)
 						return
@@ -144,7 +145,7 @@ func setupTestServer() func() {
 }
 
 func fixture(path string) string {
-	b, err := ioutil.ReadFile("testdata/fixtures/" + path)
+	b, err := os.ReadFile("testdata/fixtures/" + path)
 	if err != nil {
 		panic(err)
 	}
