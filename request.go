@@ -192,8 +192,4 @@ func (r *Request) parseBody(body interface{}) io.Reader {
 
 func (r *Request) parseURL() {
 	r.URL = r.client.baseURL.String() + r.Path
-
-	// if r.Query.Encode() != "" {
-	// 	r.URL = r.URL + "?" + r.Query.Encode()
-	// }
 }
