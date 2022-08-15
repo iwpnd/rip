@@ -28,7 +28,7 @@ type BlogApiClient struct {
     *rip.Client
 }
 
-func NewBlogApiClient(host string, options rip.ClientOptions) (*BlogApiClient, error) {
+func NewBlogApiClient(host string, ...rip.Option) (*BlogApiClient, error) {
     c, err := rip.NewClient(host, options)
     if err != nil {
         return &BlogApiClient{}, err
@@ -39,7 +39,7 @@ func NewBlogApiClient(host string, options rip.ClientOptions) (*BlogApiClient, e
 func (c *BlogApiClient) GetById(id string) (*BlogPost, error) {
     req, err := c.NR().
         SetHeader("Accept", "application/json").
-	SetParams(Params{"id": "1"})
+        SetParams(Params{"id": "1"})
 
     res, err := req.Execute("GET", "/blog/:id")
     if err != nil {
@@ -63,10 +63,10 @@ func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
 
     req := c.NR().
         SetHeaders(rip.Header{
-	    "Content-Type": "application/json",
-	    "Accept":       "application/json",
-	}).
-	SetBody(b)
+          "Content-Type": "application/json",
+          "Accept":       "application/json",
+          }).
+        SetBody(b)
 
 
     res, err := req.Execute("POST", "/blog")
@@ -74,7 +74,7 @@ func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
         return &Response{}, err
     }
 
-    b := &BlogPost{} 
+    b := &BlogPost{}
     err = rip.Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
     if err != nil {
         return &BlogPost, err
@@ -84,8 +84,11 @@ func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
 }
 
 func main() {
-    co := rip.ClientOptions{Header: rip.Header{"x-api-key": os.Getenv("API_KEY_BLOGAPI")}}
-    c, err := NewBlogApiClient(ts.URL, co)
+    c, err := NewBlogApiClient(
+      "https://myblog.io",
+      WithDefaultHeaders(rip.Header{"x-api-key": os.Getenv("API_KEY_BLOGAPI")}),
+      WithTimeout(30)
+    )
     if err != nil {
         panic("AAAH!")
     }
