@@ -28,7 +28,7 @@ type BlogApiClient struct {
     *rip.Client
 }
 
-func NewBlogApiClient(host string, ...rip.Option) (*BlogApiClient, error) {
+func NewBlogApiClient(host string, options ...rip.Option) (*BlogApiClient, error) {
     c, err := rip.NewClient(host, options)
     if err != nil {
         return &BlogApiClient{}, err
@@ -86,8 +86,8 @@ func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
 func main() {
     c, err := NewBlogApiClient(
       "https://myblog.io",
-      WithDefaultHeaders(rip.Header{"x-api-key": os.Getenv("API_KEY_BLOGAPI")}),
-      WithTimeout(30)
+      rip.WithDefaultHeaders(rip.Header{"x-api-key": os.Getenv("API_KEY_BLOGAPI")}),
+      rip.WithTimeout(30)
     )
     if err != nil {
         panic("AAAH!")
