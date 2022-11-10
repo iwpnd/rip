@@ -39,7 +39,7 @@ func NewBlogApiClient(host string, options ...rip.Option) (*BlogApiClient, error
 func (c *BlogApiClient) GetById(id string) (*BlogPost, error) {
     req, err := c.NR().
         SetHeader("Accept", "application/json").
-        SetParams(Params{"id": "1"})
+        SetParams(rip.Params{"id": id})
 
     res, err := req.Execute("GET", "/blog/:id")
     if err != nil {
@@ -99,7 +99,6 @@ func main() {
     }
 
     fmt.Printf("blogpost: \n %v\n\n", b)
-
 }
 ```
 
