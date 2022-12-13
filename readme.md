@@ -5,7 +5,7 @@
 
 # rip
 
-I just want use to REST in peace.
+I just want to REST in peace.
 
 ## Installation
 
