@@ -34,7 +34,7 @@ type BlogApiClient struct {
 }
 
 func NewBlogApiClient(host string, options ...rip.Option) (*BlogApiClient, error) {
-    c, err := rip.NewClient(host, options)
+    c, err := rip.NewClient(host, options...)
     if err != nil {
         return &BlogApiClient{}, err
     }
