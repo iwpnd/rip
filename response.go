@@ -14,6 +14,15 @@ type Response struct {
 	Close       func()
 }
 
+// ContentLength returns the content-length
+func (r *Response) ContentLength() int64 {
+	if r.RawResponse == nil {
+		return 0
+	}
+
+	return r.RawResponse.ContentLength
+}
+
 // Status returns the response status
 func (r *Response) Status() string {
 	if r.RawResponse == nil {

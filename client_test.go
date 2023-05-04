@@ -18,7 +18,7 @@ type tcase struct {
 	Params        Params
 	Path          string
 	Query         Query
-	expBody       interface{}
+	expBody       string
 	expPath       string
 	expStatusCode int
 }
@@ -268,11 +268,14 @@ func TestClientRequests(t *testing.T) {
 				}
 			}
 
-			if tc.expBody != nil {
+			if tc.expBody != "" {
+				if int(res.ContentLength()) != len(tc.expBody) {
+					t.Errorf("failed. Response \n\n %+v \n\n Content-Length does not match expected Content-Lenght \n\n %+v \n\n", res.ContentLength(), len(tc.expBody))
+				}
+
 				if res.String() != tc.expBody {
 					t.Errorf("failed. Response \n\n %+v \n\n does not match expected response \n\n %+v \n\n", res.String(), tc.expBody)
 					return
-
 				}
 			}
 		}
