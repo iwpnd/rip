@@ -50,6 +50,7 @@ func (c *BlogApiClient) GetById(id string) (*BlogPost, error) {
     if err != nil {
         return &BlogPost{}, err
     }
+    defer res.Close()
 
     b := &BlogPost{}
     err = rip.Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
@@ -78,6 +79,7 @@ func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
     if err != nil {
         return &Response{}, err
     }
+    defer res.Close()
 
     b := &BlogPost{}
     err = rip.Unmarshal(res.Header().Get("Content-Type"), res.Body(), r)
