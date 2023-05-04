@@ -234,7 +234,7 @@ func TestClientRequests(t *testing.T) {
 			if err != nil {
 				t.Error("failed to request")
 			}
-			defer res.RawResponse.Body.Close()
+			defer res.Close()
 
 			if res.Request.URL != ts.URL+tc.expPath {
 				t.Errorf("\n\n expected: %v, got: %v \n\n", ts.URL+tc.expPath, res.Request.URL)

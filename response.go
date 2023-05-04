@@ -10,7 +10,8 @@ import (
 type Response struct {
 	Request     *Request
 	RawResponse *http.Response
-	body        []byte
+	body        io.ReadCloser
+	Close       func()
 }
 
 // Status returns the response status
@@ -44,7 +45,14 @@ func (r *Response) String() string {
 	if r.body == nil {
 		return ""
 	}
-	return strings.TrimSpace(string(r.body))
+	defer r.body.Close()
+
+	body, err := io.ReadAll(r.body)
+	if err != nil {
+		return ""
+	}
+
+	return strings.TrimSpace(string(body))
 }
 
 // Body returns Body as byte array
@@ -52,8 +60,14 @@ func (r *Response) Body() []byte {
 	if r.body == nil {
 		return []byte{}
 	}
+	defer r.body.Close()
 
-	return r.body
+	body, err := io.ReadAll(r.body)
+	if err != nil {
+		return []byte{}
+	}
+
+	return body
 }
 
 // RawBody returns raw response body. be sure to close

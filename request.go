@@ -66,7 +66,10 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	resp, err := r.client.execute(r)
 	if err != nil {
 		return &Response{}, err
-
+	}
+	resp.Close = func() {
+		resp.body.Close()
+		resp.RawResponse.Body.Close()
 	}
 
 	return resp, err
