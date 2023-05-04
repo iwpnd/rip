@@ -3,6 +3,8 @@
 project_name: rip
 checksum:
   name_template: "checksums.txt"
+builds:
+  - skip: true
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
 changelog:
