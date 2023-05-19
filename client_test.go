@@ -246,7 +246,7 @@ func TestClientRequests(t *testing.T) {
 
 			if tc.Query != nil {
 				for k, v := range tc.Query {
-					q := res.Request.RawRequest.URL.Query().Get(k)
+					q := res.Request.rawRequest.URL.Query().Get(k)
 					if q != fmt.Sprintf("%v", v) {
 						t.Errorf("\n\n expected query param %v to be %v, got value %v \n\n", k, q, v)
 					}
@@ -255,7 +255,7 @@ func TestClientRequests(t *testing.T) {
 
 			if tc.Headers != nil {
 				for k, v := range tc.Headers {
-					h := res.Request.RawRequest.Header.Get(k)
+					h := res.Request.rawRequest.Header.Get(k)
 					if h == "" {
 						t.Errorf("\n\n Expected request header %v to be %v \n\n, got: %v", k, v, h)
 					}

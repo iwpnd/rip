@@ -33,7 +33,7 @@ type Request struct {
 	Result     interface{} // NOTE: can I pass struct here to unmarshal resp body to?
 	URL        string
 	client     *Client
-	RawRequest *http.Request
+	rawRequest *http.Request
 }
 
 // Execute executes a given request using a method on a given path
@@ -48,19 +48,19 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	r.parseURL()
 
 	if rd, ok := r.Body.(io.Reader); ok {
-		r.RawRequest, err = http.NewRequest(method, r.URL, rd)
+		r.rawRequest, err = http.NewRequest(method, r.URL, rd)
 	} else {
-		r.RawRequest, err = http.NewRequest(method, r.URL, nil)
+		r.rawRequest, err = http.NewRequest(method, r.URL, nil)
 	}
 
 	if err != nil {
 		return &Response{}, err
 	}
 
-	r.RawRequest.Header = r.Header
+	r.rawRequest.Header = r.Header
 
 	if r.Query != nil {
-		r.RawRequest.URL.RawQuery = r.Query.Encode()
+		r.rawRequest.URL.RawQuery = r.Query.Encode()
 	}
 
 	resp, err := r.client.execute(r)
@@ -69,7 +69,7 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	}
 	resp.Close = func() {
 		resp.body.Close()
-		resp.RawResponse.Body.Close()
+		resp.rawResponse.Body.Close()
 	}
 
 	return resp, err

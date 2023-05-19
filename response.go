@@ -9,44 +9,44 @@ import (
 // Response ...
 type Response struct {
 	Request     *Request
-	RawResponse *http.Response
+	rawResponse *http.Response
 	body        io.ReadCloser
 	Close       func()
 }
 
 // ContentLength returns the content-length
 func (r *Response) ContentLength() int64 {
-	if r.RawResponse == nil {
+	if r.rawResponse == nil {
 		return 0
 	}
 
-	return r.RawResponse.ContentLength
+	return r.rawResponse.ContentLength
 }
 
 // Status returns the response status
 func (r *Response) Status() string {
-	if r.RawResponse == nil {
+	if r.rawResponse == nil {
 		return ""
 	}
 
-	return r.RawResponse.Status
+	return r.rawResponse.Status
 }
 
 // StatusCode returns the response status code
 func (r *Response) StatusCode() int {
-	if r.RawResponse == nil {
+	if r.rawResponse == nil {
 		return 0
 	}
 
-	return r.RawResponse.StatusCode
+	return r.rawResponse.StatusCode
 }
 
 // Header method returns the response headers
 func (r *Response) Header() http.Header {
-	if r.RawResponse == nil {
+	if r.rawResponse == nil {
 		return http.Header{}
 	}
-	return r.RawResponse.Header
+	return r.rawResponse.Header
 }
 
 // String method returns the body of the server response as String.
@@ -81,10 +81,10 @@ func (r *Response) Body() []byte {
 
 // RawBody returns raw response body. be sure to close
 func (r *Response) RawBody() io.ReadCloser {
-	if r.RawResponse == nil {
+	if r.rawResponse == nil {
 		return nil
 	}
-	return r.RawResponse.Body
+	return r.rawResponse.Body
 }
 
 // IsSuccess returns true if 199 < StatusCode < 300

@@ -81,13 +81,13 @@ func (c *Client) NR() *Request {
 }
 
 func (c *Client) execute(req *Request) (*Response, error) {
-	resp, err := c.httpClient.Do(req.RawRequest)
+	resp, err := c.httpClient.Do(req.rawRequest)
 	if err != nil {
 		return &Response{}, err
 	}
 
 	response := &Response{
-		Request: req, RawResponse: resp,
+		Request: req, rawResponse: resp,
 	}
 
 	response.body = resp.Body
