@@ -1,6 +1,7 @@
 package rip
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -210,6 +211,8 @@ func TestClientRequests(t *testing.T) {
 		t.Error("could not initialize client")
 	}
 
+	ctx := context.Background()
+
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
 			req := c.NR()
@@ -230,7 +233,7 @@ func TestClientRequests(t *testing.T) {
 				req.SetBody(tc.Body)
 			}
 
-			res, err := req.Execute(tc.Method, tc.Path)
+			res, err := req.Execute(ctx, tc.Method, tc.Path)
 			if err != nil {
 				t.Error("failed to request")
 			}

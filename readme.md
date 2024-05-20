@@ -19,6 +19,7 @@ go get -u github.com/iwpnd/rip
 package main
 
 import (
+  "context"
   "encoding/json"
 
   "github.com/iwpnd/rip"
@@ -33,7 +34,10 @@ type BlogApiClient struct {
     *rip.Client
 }
 
-func NewBlogApiClient(host string, options ...rip.Option) (*BlogApiClient, error) {
+func NewBlogApiClient(
+    host string,
+    options ...rip.Option
+) (*BlogApiClient, error) {
     c, err := rip.NewClient(host, options...)
     if err != nil {
         return &BlogApiClient{}, err
@@ -41,12 +45,15 @@ func NewBlogApiClient(host string, options ...rip.Option) (*BlogApiClient, error
     return &BlogApiClient{c}, nil
 }
 
-func (c *BlogApiClient) GetById(id string) (*BlogPost, error) {
+func (c *BlogApiClient) GetById(
+    ctx context.Context,
+    id string
+) (*BlogPost, error) {
     req, err := c.NR().
         SetHeader("Accept", "application/json").
         SetParams(rip.Params{"id": id})
 
-    res, err := req.Execute("GET", "/blog/:id")
+    res, err := req.Execute(ctx, "GET", "/blog/:id")
     if err != nil {
         return &BlogPost{}, err
     }
@@ -61,7 +68,10 @@ func (c *BlogApiClient) GetById(id string) (*BlogPost, error) {
     return b
 }
 
-func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
+func (c *BlogApiClient) Create(
+    ctx context.Context,
+    post BlogPost
+) (*BlogPost, error) {
     b, err := json.Marshal(post)
     if err != nil {
         return &BlogPost, err
@@ -75,7 +85,7 @@ func (c *BlogApiClient) Create(post BlogPost) (*BlogPost, error) {
         SetBody(b)
 
 
-    res, err := req.Execute("POST", "/blog")
+    res, err := req.Execute(ctx, "POST", "/blog")
     if err != nil {
         return &Response{}, err
     }
@@ -100,7 +110,9 @@ func main() {
         panic("AAAH!")
     }
 
-    b, err := c.GetById(id)
+    ctx := context.Background()
+
+    b, err := c.GetById(ctx, id)
     if err != nil {
         t.Errorf("could not get blogpost for id %v :(", id)
     }

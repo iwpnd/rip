@@ -1,6 +1,7 @@
 package rip
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,8 +10,9 @@ import (
 
 func TestErrClientMissing(t *testing.T) {
 	r := &Request{}
+	ctx := context.Background()
 
-	_, err := r.Execute("GET", "/fails-anyways")
+	_, err := r.Execute(ctx, "GET", "/fails-anyways")
 	if err == nil {
 		t.Error("should've failed")
 	}

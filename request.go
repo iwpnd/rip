@@ -2,6 +2,7 @@ package rip
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -37,7 +38,7 @@ type Request struct {
 }
 
 // Execute executes a given request using a method on a given path
-func (r *Request) Execute(method, path string) (*Response, error) {
+func (r *Request) Execute(ctx context.Context, method, path string) (*Response, error) {
 	if r.client == nil {
 		return &Response{}, ErrClientMissing
 	}
@@ -48,9 +49,9 @@ func (r *Request) Execute(method, path string) (*Response, error) {
 	r.parseURL()
 
 	if rd, ok := r.Body.(io.Reader); ok {
-		r.rawRequest, err = http.NewRequest(method, r.URL, rd)
+		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, rd)
 	} else {
-		r.rawRequest, err = http.NewRequest(method, r.URL, nil)
+		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, nil)
 	}
 
 	if err != nil {
