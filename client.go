@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-const defaultTimeout = time.Duration(4) * time.Second
-
 // Option ...
 type Option func(*Client)
 
@@ -26,12 +24,10 @@ type Client struct {
 }
 
 // WithTimeout sets timeout in seconds on rips httpClient
+// Deprecated: in favour of context timeouts
 func WithTimeout(timeout time.Duration) Option {
 	return func(c *Client) {
-		c.options.Timeout = time.Duration(timeout)
-		timeout = time.Duration(timeout) * time.Second
-
-		c.httpClient = &http.Client{Timeout: timeout}
+		c.httpClient = &http.Client{}
 	}
 }
 
@@ -50,14 +46,10 @@ func NewClient(host string, options ...Option) (*Client, error) {
 	}
 
 	client := &Client{
-		baseURL: u,
-		options: &ClientOptions{},
-		httpClient: &http.Client{
-			Timeout: defaultTimeout,
-		},
+		baseURL:    u,
+		options:    &ClientOptions{},
+		httpClient: &http.Client{},
 	}
-
-	client.options.Timeout = defaultTimeout
 
 	for _, option := range options {
 		option(client)

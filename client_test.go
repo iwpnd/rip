@@ -168,10 +168,6 @@ func TestClientWithOptions(t *testing.T) {
 		t.Error("could not initialize client")
 	}
 
-	if c.options.Timeout == defaultTimeout {
-		t.Error("should not be defaultTimeout")
-	}
-
 	if c.options.Header == nil {
 		t.Error("should not be nil Header")
 	}
@@ -185,10 +181,6 @@ func TestClientWithoutOptions(t *testing.T) {
 
 	if err != nil {
 		t.Error("could not initialize client")
-	}
-
-	if c.options.Timeout != defaultTimeout {
-		t.Errorf("should be defaultTimeout, got %v", c.options.Timeout)
 	}
 
 	if c.options.Header != nil {
