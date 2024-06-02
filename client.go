@@ -24,10 +24,11 @@ type Client struct {
 }
 
 // WithTimeout sets timeout in seconds on rips httpClient
-// Deprecated: in favour of context timeouts
 func WithTimeout(timeout time.Duration) Option {
 	return func(c *Client) {
-		c.httpClient = &http.Client{}
+		c.options.Timeout = timeout
+
+		c.httpClient = &http.Client{Timeout: timeout}
 	}
 }
 

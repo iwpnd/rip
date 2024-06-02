@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 type tcase struct {
@@ -161,11 +162,15 @@ func TestClientWithOptions(t *testing.T) {
 		WithDefaultHeaders(map[string]string{
 			"x-api-key": "api-key-test",
 		}),
-		WithTimeout(30),
+		WithTimeout(30*time.Second),
 	)
 
 	if err != nil {
 		t.Error("could not initialize client")
+	}
+
+	if c.options.Timeout == 0 {
+		t.Error("should not be timeout unset")
 	}
 
 	if c.options.Header == nil {
@@ -183,6 +188,10 @@ func TestClientWithoutOptions(t *testing.T) {
 		t.Error("could not initialize client")
 	}
 
+	if c.options.Timeout != 0 {
+		t.Error("should be 0")
+	}
+
 	if c.options.Header != nil {
 		t.Error("should be nil Header")
 	}
@@ -196,7 +205,7 @@ func TestClientRequests(t *testing.T) {
 		WithDefaultHeaders(map[string]string{
 			"x-api-key": "api-key-test",
 		}),
-		WithTimeout(30),
+		WithTimeout(30*time.Second),
 	)
 
 	if err != nil {
