@@ -1,7 +1,6 @@
 package rip
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,32 +24,28 @@ type tcase struct {
 	expStatusCode int
 }
 
-var (
-	ts *httptest.Server
-)
+var ts *httptest.Server
 
-func setupTestServer() func() {
+func setupTestServer() func() { //nolint: cyclop
 	ts = httptest.NewServer(http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			switch r.Method {
-			case "GET":
+			case http.MethodGet:
 				switch r.URL.Path {
 				case "/test":
-					{
-						accept := r.Header.Get("Accept")
-						switch accept {
-						case contentTypeJSON:
-							w.Header().Set("Content-Type", contentTypeJSON)
-							w.WriteHeader(http.StatusOK)
-							fmt.Fprint(w, fixture("response.json"))
-						case contentTypeTEXT:
-							w.WriteHeader(http.StatusOK)
-							w.Header().Set("Content-Type", contentTypeTEXT)
-							fmt.Fprint(w, "text response")
-						default:
-							w.WriteHeader(http.StatusNotAcceptable)
-							fmt.Fprint(w, "nope")
-						}
+					accept := r.Header.Get("Accept")
+					switch accept {
+					case contentTypeJSON:
+						w.Header().Set("Content-Type", contentTypeJSON)
+						w.WriteHeader(http.StatusOK)
+						fmt.Fprint(w, fixture("response.json"))
+					case contentTypeTEXT:
+						w.WriteHeader(http.StatusOK)
+						w.Header().Set("Content-Type", contentTypeTEXT)
+						fmt.Fprint(w, "text response")
+					default:
+						w.WriteHeader(http.StatusNotAcceptable)
+						fmt.Fprint(w, "nope")
 					}
 				case "/test/1/2":
 					w.Header().Set("Content-Type", contentTypeJSON)
@@ -60,7 +55,7 @@ func setupTestServer() func() {
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusNotFound)
 				}
-			case "POST":
+			case http.MethodPost:
 				switch r.URL.Path {
 				case "/test":
 					w.Header().Set("Content-Type", contentTypeJSON)
@@ -94,7 +89,7 @@ func setupTestServer() func() {
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusNotFound)
 				}
-			case "PUT":
+			case http.MethodPut:
 				switch r.URL.Path {
 				case "/test":
 					w.Header().Set("Content-Type", contentTypeJSON)
@@ -128,7 +123,7 @@ func setupTestServer() func() {
 					w.Header().Set("Content-Type", contentTypeJSON)
 					w.WriteHeader(http.StatusNotFound)
 				}
-			case "DELETE":
+			case http.MethodDelete:
 				switch r.URL.Path {
 				case "/test/1/2":
 					w.Header().Set("Content-Type", contentTypeJSON)
@@ -164,7 +159,6 @@ func TestClientWithOptions(t *testing.T) {
 		}),
 		WithTimeout(30*time.Second),
 	)
-
 	if err != nil {
 		t.Error("could not initialize client")
 	}
@@ -183,7 +177,6 @@ func TestClientWithoutOptions(t *testing.T) {
 	defer teardown()
 
 	c, err := NewClient(ts.URL)
-
 	if err != nil {
 		t.Error("could not initialize client")
 	}
@@ -197,7 +190,7 @@ func TestClientWithoutOptions(t *testing.T) {
 	}
 }
 
-func TestClientRequests(t *testing.T) {
+func TestClientRequests(t *testing.T) { //nolint: cyclop
 	teardown := setupTestServer()
 	defer teardown()
 
@@ -207,15 +200,15 @@ func TestClientRequests(t *testing.T) {
 		}),
 		WithTimeout(30*time.Second),
 	)
-
 	if err != nil {
 		t.Error("could not initialize client")
 	}
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			req := c.NR()
 
 			if tc.Headers != nil {
@@ -274,7 +267,7 @@ func TestClientRequests(t *testing.T) {
 
 			if tc.expBody != "" {
 				if int(res.ContentLength()) != len(tc.expBody) {
-					t.Errorf("failed. Response \n\n %+v \n\n Content-Length does not match expected Content-Lenght \n\n %+v \n\n", res.ContentLength(), len(tc.expBody))
+					t.Errorf("failed. Response \n\n %+v \n\n Content-Length does not match expected Content-Length \n\n %+v \n\n", res.ContentLength(), len(tc.expBody))
 				}
 
 				if res.String() != tc.expBody {

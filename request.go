@@ -15,23 +15,23 @@ import (
 // ErrClientMissing occurs when Request is instantiated without Client.NR()
 var ErrClientMissing = errors.New("use .NR() to create a new request instead")
 
-// Header ...
+// Header params passed to the request
 type Header = map[string]string
 
-// Params ...
-type Params = map[string]interface{}
+// Params passed to the request
+type Params = map[string]any
 
-// Query ...
-type Query = map[string]interface{}
+// Query are any query parameter passed to the request.
+type Query = map[string]any
 
-// Request ...
+// Request is the RIP request.
 type Request struct {
-	Body       interface{}
+	Body       any
 	Header     http.Header
 	Params     Params
 	Path       string
 	Query      url.Values
-	Result     interface{} // NOTE: can I pass struct here to unmarshal resp body to?
+	Result     any // NOTE: can I pass struct here to unmarshal resp body to?
 	URL        string
 	client     *Client
 	rawRequest *http.Request
@@ -51,7 +51,7 @@ func (r *Request) Execute(ctx context.Context, method, path string) (*Response, 
 	if rd, ok := r.Body.(io.Reader); ok {
 		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, rd)
 	} else {
-		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, nil)
+		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, http.NoBody)
 	}
 
 	if err != nil {
@@ -68,9 +68,16 @@ func (r *Request) Execute(ctx context.Context, method, path string) (*Response, 
 	if err != nil {
 		return &Response{}, err
 	}
-	resp.Close = func() {
-		resp.body.Close()
-		resp.rawResponse.Body.Close()
+	resp.Close = func() error {
+		err := resp.body.Close()
+		if err != nil {
+			return err
+		}
+		rErr := resp.rawResponse.Body.Close()
+		if rErr != nil {
+			return rErr
+		}
+		return nil
 	}
 
 	return resp, err
@@ -162,7 +169,7 @@ func (r *Request) SetHeaders(header Header) *Request {
 }
 
 // SetBody to set a request body
-func (r *Request) SetBody(body interface{}) *Request {
+func (r *Request) SetBody(body any) *Request {
 	if body == nil {
 		return r
 	}
@@ -174,7 +181,7 @@ func (r *Request) SetBody(body interface{}) *Request {
 }
 
 // NOTE: rn expected json only
-func (r *Request) parseBody(body interface{}) io.Reader {
+func (r *Request) parseBody(body any) io.Reader {
 	if body == nil {
 		return nil
 	}

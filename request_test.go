@@ -1,7 +1,7 @@
 package rip
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -10,14 +10,14 @@ import (
 
 func TestErrClientMissing(t *testing.T) {
 	r := &Request{}
-	ctx := context.Background()
+	ctx := t.Context()
 
 	_, err := r.Execute(ctx, "GET", "/fails-anyways")
 	if err == nil {
 		t.Error("should've failed")
 	}
 
-	if err != ErrClientMissing {
+	if !errors.Is(err, ErrClientMissing) {
 		t.Error("should've been ErrClientMissing")
 	}
 }
@@ -67,7 +67,7 @@ func TestParseParams(t *testing.T) {
 		"test ignore object": {
 			path: "/test/:test",
 			params: Params{
-				"test": map[string]interface{}{
+				"test": map[string]any{
 					"bla": "bla",
 				},
 			},
@@ -77,6 +77,7 @@ func TestParseParams(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			r := &Request{}
 			r.SetParams(tc.params)
 			r.parsePath(tc.path, tc.params)
@@ -121,6 +122,7 @@ func TestParseQueryParams(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			r := &Request{}
 			r.parseQuery(tc.query)
 
@@ -165,6 +167,7 @@ func TestSetHeader(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			r := &Request{}
 
 			if tc.key != "" && tc.value != "" {
@@ -210,6 +213,7 @@ func TestSetHeaders(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			r := &Request{}
 
 			r.SetHeaders(tc.inputHeader)
@@ -247,6 +251,7 @@ func TestSetQuery(t *testing.T) {
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			r := &Request{}
 
 			r.SetQuery(tc.query)
@@ -265,7 +270,7 @@ func TestSetQuery(t *testing.T) {
 
 func TestSetBody(t *testing.T) {
 	type tcase struct {
-		body interface{}
+		body any
 	}
 
 	type testBody struct {
@@ -275,13 +280,16 @@ func TestSetBody(t *testing.T) {
 
 	tests := map[string]tcase{
 		"test set body": {
-			body: testBody{Name: "test", Age: 19}},
+			body: testBody{Name: "test", Age: 19},
+		},
 		"test string body": {
-			body: `{"data":{"test":"test"}}`},
+			body: `{"data":{"test":"test"}}`,
+		},
 	}
 
 	fn := func(tc tcase) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			r := &Request{Header: http.Header{}}
 			r.SetBody(tc.body)
 

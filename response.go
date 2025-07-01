@@ -6,15 +6,15 @@ import (
 	"strings"
 )
 
-// Response ...
+// Response the rip response wrapping the original request and response.
 type Response struct {
 	Request     *Request
 	rawResponse *http.Response
 	body        io.ReadCloser
-	Close       func()
+	Close       func() error
 }
 
-// ContentLength returns the content-length
+// ContentLength returns the content-length.
 func (r *Response) ContentLength() int64 {
 	if r.rawResponse == nil {
 		return 0
@@ -23,7 +23,7 @@ func (r *Response) ContentLength() int64 {
 	return r.rawResponse.ContentLength
 }
 
-// Status returns the response status
+// Status returns the response status.
 func (r *Response) Status() string {
 	if r.rawResponse == nil {
 		return ""
@@ -32,7 +32,7 @@ func (r *Response) Status() string {
 	return r.rawResponse.Status
 }
 
-// StatusCode returns the response status code
+// StatusCode returns the response status code.
 func (r *Response) StatusCode() int {
 	if r.rawResponse == nil {
 		return 0
@@ -41,7 +41,7 @@ func (r *Response) StatusCode() int {
 	return r.rawResponse.StatusCode
 }
 
-// Header method returns the response headers
+// Header method returns the response headers.
 func (r *Response) Header() http.Header {
 	if r.rawResponse == nil {
 		return http.Header{}
@@ -54,7 +54,7 @@ func (r *Response) String() string {
 	if r.body == nil {
 		return ""
 	}
-	defer r.body.Close()
+	defer r.body.Close() //nolint: errcheck
 
 	body, err := io.ReadAll(r.body)
 	if err != nil {
@@ -69,7 +69,7 @@ func (r *Response) Body() []byte {
 	if r.body == nil {
 		return []byte{}
 	}
-	defer r.body.Close()
+	defer r.body.Close() //nolint: errcheck
 
 	body, err := io.ReadAll(r.body)
 	if err != nil {

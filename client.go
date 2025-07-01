@@ -6,16 +6,16 @@ import (
 	"time"
 )
 
-// Option ...
+// Option to use in option pattern.
 type Option func(*Client)
 
-// ClientOptions ...
+// ClientOptions to configure the http client.
 type ClientOptions struct {
 	Header  Header
 	Timeout time.Duration
 }
 
-// Client ...
+// Client wraps an http client.
 type Client struct {
 	httpClient *http.Client
 	baseURL    *url.URL
@@ -23,7 +23,7 @@ type Client struct {
 	Header     Header
 }
 
-// WithTimeout sets timeout in seconds on rips httpClient
+// WithTimeout sets timeout in seconds on rips httpClient.
 func WithTimeout(timeout time.Duration) Option {
 	return func(c *Client) {
 		c.options.Timeout = timeout
@@ -74,7 +74,9 @@ func (c *Client) NR() *Request {
 }
 
 func (c *Client) execute(req *Request) (*Response, error) {
-	resp, err := c.httpClient.Do(req.rawRequest)
+	// either caller is responsible to close the request
+	// or Response methods do.
+	resp, err := c.httpClient.Do(req.rawRequest) //nolint: bodyclose
 	if err != nil {
 		return &Response{}, err
 	}
