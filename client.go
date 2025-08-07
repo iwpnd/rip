@@ -78,7 +78,7 @@ func (c *Client) execute(req *Request) (*Response, error) {
 	// or Response methods do.
 	resp, err := c.httpClient.Do(req.rawRequest) //nolint: bodyclose
 	if err != nil {
-		return &Response{}, err
+		return &Response{Request: req, rawResponse: resp, Close: func() (err error) { return }}, err
 	}
 
 	response := &Response{
@@ -86,6 +86,18 @@ func (c *Client) execute(req *Request) (*Response, error) {
 	}
 
 	response.body = resp.Body
+
+	response.Close = func() error {
+		err := response.body.Close()
+		if err != nil {
+			return err
+		}
+		rErr := response.rawResponse.Body.Close()
+		if rErr != nil {
+			return rErr
+		}
+		return nil
+	}
 
 	return response, nil
 }

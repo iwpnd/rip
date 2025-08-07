@@ -14,6 +14,12 @@ type Response struct {
 	Close       func() error
 }
 
+func NewResponse(request *Request, rawResponse *http.Response) *Response {
+	resp := &Response{Request: request, rawResponse: rawResponse}
+	resp.Close = func() error { return nil }
+	return resp
+}
+
 // ContentLength returns the content-length.
 func (r *Response) ContentLength() int64 {
 	if r.rawResponse == nil {

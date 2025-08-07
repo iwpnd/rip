@@ -1,6 +1,8 @@
 package rip
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -188,6 +190,47 @@ func TestClientWithoutOptions(t *testing.T) {
 	if c.options.Header != nil {
 		t.Error("should be nil Header")
 	}
+}
+
+func TestClientContextCancel(t *testing.T) {
+	path := "/europe/germany-latest.osm.pbf"
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == path {
+			time.Sleep(time.Second)
+			w.Header().Add("Content-Type", "application/octet-stream")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte("OSM DATA"))
+			return
+		}
+
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer server.Close()
+
+	c, err := NewClient(server.URL,
+		WithDefaultHeaders(map[string]string{
+			"x-api-key": "api-key-test",
+		}),
+		WithTimeout(30*time.Second),
+	)
+	if err != nil {
+		t.Error("could not initialize client")
+	}
+
+	ctx, cancel := context.WithTimeout(t.Context(), 50*time.Millisecond)
+	defer cancel()
+
+	req := c.NR()
+	res, err := req.Execute(ctx, http.MethodGet, path)
+	if err == nil {
+		t.Fatal("expected error due to context timeout, got nil")
+	}
+
+	if !errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected context cancellation error, got: %v", err)
+	}
+
+	res.Close()
 }
 
 func TestClientRequests(t *testing.T) { //nolint: cyclop

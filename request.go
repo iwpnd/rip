@@ -40,7 +40,7 @@ type Request struct {
 // Execute executes a given request using a method on a given path
 func (r *Request) Execute(ctx context.Context, method, path string) (*Response, error) {
 	if r.client == nil {
-		return &Response{}, ErrClientMissing
+		return NewResponse(r, nil), ErrClientMissing
 	}
 
 	var err error
@@ -53,9 +53,8 @@ func (r *Request) Execute(ctx context.Context, method, path string) (*Response, 
 	} else {
 		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, http.NoBody)
 	}
-
 	if err != nil {
-		return &Response{}, err
+		return NewResponse(r, nil), err
 	}
 
 	r.rawRequest.Header = r.Header
@@ -66,18 +65,7 @@ func (r *Request) Execute(ctx context.Context, method, path string) (*Response, 
 
 	resp, err := r.client.execute(r)
 	if err != nil {
-		return &Response{}, err
-	}
-	resp.Close = func() error {
-		err := resp.body.Close()
-		if err != nil {
-			return err
-		}
-		rErr := resp.rawResponse.Body.Close()
-		if rErr != nil {
-			return rErr
-		}
-		return nil
+		return resp, err
 	}
 
 	return resp, err
