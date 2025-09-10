@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"os"
 	"strconv"
@@ -155,11 +156,17 @@ func TestClientWithOptions(t *testing.T) {
 	teardown := setupTestServer()
 	defer teardown()
 
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		t.Fatalf("expected err to be nil, but got: %s", err)
+	}
+
 	c, err := NewClient(ts.URL,
 		WithDefaultHeaders(map[string]string{
 			"x-api-key": "api-key-test",
 		}),
 		WithTimeout(30*time.Second),
+		WithCookieJar(jar),
 	)
 	if err != nil {
 		t.Error("could not initialize client")
@@ -171,6 +178,14 @@ func TestClientWithOptions(t *testing.T) {
 
 	if c.options.Header == nil {
 		t.Error("should not be nil Header")
+	}
+	want := "api-key-test"
+	if h, ok := c.options.Header["x-api-key"]; !ok || h != want {
+		t.Errorf("want: %s, got: %s", want, h)
+	}
+
+	if c.httpClient.Jar == nil {
+		t.Errorf("expected cookie jar to be set, got nil")
 	}
 }
 

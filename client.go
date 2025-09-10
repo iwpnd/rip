@@ -2,6 +2,7 @@ package rip
 
 import (
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"time"
 )
@@ -28,7 +29,14 @@ func WithTimeout(timeout time.Duration) Option {
 	return func(c *Client) {
 		c.options.Timeout = timeout
 
-		c.httpClient = &http.Client{Timeout: timeout}
+		c.httpClient.Timeout = timeout
+	}
+}
+
+// WithCookieJar sets a cookie jar on rips httpClient.
+func WithCookieJar(jar *cookiejar.Jar) Option {
+	return func(c *Client) {
+		c.httpClient.Jar = jar
 	}
 }
 
