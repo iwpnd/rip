@@ -162,6 +162,13 @@ func (r *Request) SetBody(body any) *Request {
 		return r
 	}
 
+	// if we get an io.Reader we can set it and return
+	if _, ok := body.(io.Reader); ok {
+		r.Body = body
+		return r
+	}
+
+	// lets otherwise assume we only get marshallable bodies
 	b := r.parseBody(body)
 	r.Body = b
 
