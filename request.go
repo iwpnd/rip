@@ -26,15 +26,16 @@ type Query = map[string]any
 
 // Request is the RIP request.
 type Request struct {
-	Body       any
-	Header     http.Header
-	Params     Params
-	Path       string
-	Query      url.Values
-	Result     any // NOTE: can I pass struct here to unmarshal resp body to?
-	URL        string
-	client     *Client
-	rawRequest *http.Request
+	Body          any
+	Header        http.Header
+	Params        Params
+	Path          string
+	ContentLength int64
+	Query         url.Values
+	Result        any // NOTE: can I pass struct here to unmarshal resp body to?
+	URL           string
+	client        *Client
+	rawRequest    *http.Request
 }
 
 // Execute executes a given request using a method on a given path
@@ -57,6 +58,10 @@ func (r *Request) Execute(ctx context.Context, method, path string) (*Response, 
 		return NewResponse(r, nil), err
 	}
 
+	if r.ContentLength != 0 {
+		r.rawRequest.ContentLength = r.ContentLength
+	}
+
 	r.rawRequest.Header = r.Header
 
 	if r.Query != nil {
@@ -74,6 +79,15 @@ func (r *Request) Execute(ctx context.Context, method, path string) (*Response, 
 // SetQuery to set query parameters
 func (r *Request) SetQuery(query Query) *Request {
 	r.parseQuery(query)
+
+	return r
+}
+
+// SetContentLength for when you want to overwrite the default behaviour
+// of *http.Request to calculate Content-Length.
+// see: https://pkg.go.dev/net/http#NewRequestWithContext
+func (r *Request) SetContentLength(length int64) *Request {
+	r.ContentLength = length
 
 	return r
 }

@@ -304,3 +304,32 @@ func TestSetBody(t *testing.T) {
 		t.Run(name, fn(tc))
 	}
 }
+
+func TestSetContentLength(t *testing.T) {
+	type tcase struct {
+		length int64
+	}
+
+	tests := map[string]tcase{
+		"set content length": {
+			length: 10,
+		},
+	}
+
+	fn := func(tc tcase) func(*testing.T) {
+		return func(t *testing.T) {
+			t.Helper()
+			r := &Request{Header: http.Header{}}
+			r.SetContentLength(tc.length)
+
+			got := r.ContentLength
+			if got == 0 {
+				t.Errorf("should've set content length to %d", tc.length)
+			}
+		}
+	}
+
+	for name, tc := range tests {
+		t.Run(name, fn(tc))
+	}
+}
