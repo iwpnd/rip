@@ -47,6 +47,13 @@ func WithDefaultHeaders(headers Header) Option {
 	}
 }
 
+// WithTransport sets a custom Transport.
+func WithTransport(transport *http.Transport) Option {
+	return func(c *Client) {
+		c.httpClient.Transport = transport
+	}
+}
+
 // NewClient creates a new Client
 func NewClient(host string, options ...Option) (*Client, error) {
 	u, err := url.Parse(host)
