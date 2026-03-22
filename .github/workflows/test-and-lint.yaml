@@ -17,20 +17,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup Go
-        uses: actions/setup-go@v6
+      - name: dependencies
+        uses: iwpnd/github-actions/actions/mise-install@v1
         with:
-          go-version: "1.25"
-          token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: build
-        run: go build .
+        run: make build
 
       - name: lint
-        uses: golangci/golangci-lint-action@v9.2.0
+        run: make lint
 
       - name: test
-        run: go test -v ./...
+        run: make test
 
   tag-and-release:
     runs-on: ubuntu-latest
@@ -38,6 +37,6 @@ jobs:
     if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
     steps:
       - name: release
-        uses: iwpnd/semantic-release-action@v1
+        uses: iwpnd/github-actions/actions/release@v1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
