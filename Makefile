@@ -8,7 +8,7 @@ CGO_ENABLED ?= 0
 build:
 	@echo "building"
 	@echo "VERSION=$(VERSION) GITSHA=$(GITSHA) BUILDTIME=$(BUILDTIME)"
-	GOARCH=$(GOARCH) CGO_ENABLED=$(CGO_ENABLED) go build -ldflags '$(LDFLAGS)' -o .
+	GOARCH=$(GOARCH) CGO_ENABLED=$(CGO_ENABLED) go build .
 
 .PHONY: install
 install:
