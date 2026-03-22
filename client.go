@@ -54,6 +54,16 @@ func WithTransport(transport *http.Transport) Option {
 	}
 }
 
+func defaultTransport() *http.Transport {
+	return &http.Transport{
+		MaxIdleConns:        100,              // Maximum idle connections
+		MaxIdleConnsPerHost: 10,               // Maximum idle connections per host
+		IdleConnTimeout:     90 * time.Second, // Idle connection timeout
+		DisableCompression:  false,            // Enable compression
+		DisableKeepAlives:   false,            // Enable keep-alives
+	}
+}
+
 // NewClient creates a new Client
 func NewClient(host string, options ...Option) (*Client, error) {
 	u, err := url.Parse(host)
@@ -61,10 +71,14 @@ func NewClient(host string, options ...Option) (*Client, error) {
 		return &Client{}, err
 	}
 
+	transport := defaultTransport()
+
 	client := &Client{
-		baseURL:    u,
-		options:    &ClientOptions{},
-		httpClient: &http.Client{},
+		baseURL: u,
+		options: &ClientOptions{},
+		httpClient: &http.Client{
+			Transport: transport,
+		},
 	}
 
 	for _, option := range options {
@@ -91,7 +105,8 @@ func (c *Client) NR() *Request {
 func (c *Client) execute(req *Request) (*Response, error) {
 	// either caller is responsible to close the request
 	// or Response methods do.
-	resp, err := c.httpClient.Do(req.rawRequest) //nolint: bodyclose
+	//nolint: bodyclose
+	resp, err := c.httpClient.Do(req.rawRequest) //nolint:gosec // not a server
 	if err != nil {
 		return NewResponse(req, resp), err
 	}
