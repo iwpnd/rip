@@ -1,28 +1,40 @@
-name: ci
+name: test-and-lint
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+  checks: write
+  packages: write
 
 jobs:
-  ci:
+  test-and-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v6
-    
-    - name: Setup Go
-      uses: actions/setup-go@v6
-       
-    - name: build
-      run: go build . 
-      
-    - name: lint
-      uses: golangci/golangci-lint-action@v9.2.0
-      with:
-        version: latest
-    
-    - name: test
-      run: go test -v ./...
+      - uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+
+      - name: build
+        run: go build .
+
+      - name: lint
+        uses: golangci/golangci-lint-action@v9.2.0
+
+      - name: test
+        run: go test -v ./...
+
+  tag-and-release:
+    runs-on: ubuntu-latest
+    needs: [ci]
+    if: github.event_name == 'push' && github.ref_name == github.event.repository.default_branch
+    steps:
+      - name: release
+        uses: iwpnd/semantic-release-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
