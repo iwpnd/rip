@@ -49,7 +49,7 @@ func (c *BlogApiClient) GetById(
     ctx context.Context,
     id string
 ) (*BlogPost, error) {
-    req, err := c.NR().
+    req := c.NR().
         SetHeader("Accept", "application/json").
         SetParams(rip.Params{"id": id})
 
