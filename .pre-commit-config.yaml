@@ -1,13 +1,21 @@
+default_stages: [pre-commit, pre-push]
+default_install_hook_types: [pre-commit, prepare-commit-msg, commit-msg]
 repos:
-- repo: https://github.com/dnephin/pre-commit-golang
-  rev: v0.5.1
-  hooks:
-    - id: go-fmt
-    - id: go-vet
-    - id: golangci-lint
-    - id: go-imports
-    - id: go-mod-tidy
-- repo: https://github.com/jorisroovers/gitlint
-  rev: v0.19.1
-  hooks:
-    - id: gitlint
+  - repo: https://github.com/dnephin/pre-commit-golang
+    rev: v0.5.1
+    hooks:
+      - id: go-fmt
+      - id: go-vet
+      - id: golangci-lint
+      - id: go-imports
+      - id: go-mod-tidy
+  - repo: https://github.com/jorisroovers/gitlint
+    rev: v0.19.1
+    hooks:
+      - id: gitlint
+        stages: [commit-msg]
+  - repo: https://github.com/iwpnd/pre-commit-devmoji
+    rev: v0.1.2
+    hooks:
+      - id: devmoji
+        stages: [prepare-commit-msg]
