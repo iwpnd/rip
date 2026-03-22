@@ -106,7 +106,7 @@ func (c *Client) execute(req *Request) (*Response, error) {
 	// either caller is responsible to close the request
 	// or Response methods do.
 	//nolint: bodyclose
-	resp, err := c.httpClient.Do(req.rawRequest) //nolint:gosec // not a server
+	resp, err := c.httpClient.Do(req.rawRequest)
 	if err != nil {
 		return NewResponse(req, resp), err
 	}
