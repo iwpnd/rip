@@ -1,3 +1,9 @@
+## [0.8.1](https://github.com/iwpnd/rip/compare/v0.8.0...v0.8.1) (2026-07-20)
+
+### 🐛 Bug Fixes
+
+* 🐛 Request.AddParam to incrementally add parameter to the request ([6da153a](https://github.com/iwpnd/rip/commit/6da153a4cf6bf10dcc80a6e6225005068cf1855b))
+
 ## [0.8.0](https://github.com/iwpnd/rip/compare/v0.7.5...v0.8.0) (2026-03-22)
 
 ### ✨ Features
