@@ -1,3 +1,9 @@
+## [0.8.2](https://github.com/iwpnd/rip/compare/v0.8.1...v0.8.2) (2026-07-20)
+
+### 🐛 Bug Fixes
+
+* 🐛 query nil ([e74fcbb](https://github.com/iwpnd/rip/commit/e74fcbb827efe03376a390ff19fc60c4fb8d92b4))
+
 ## [0.8.1](https://github.com/iwpnd/rip/compare/v0.8.0...v0.8.1) (2026-07-20)
 
 ### 🐛 Bug Fixes
