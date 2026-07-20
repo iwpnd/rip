@@ -120,6 +120,17 @@ func (r *Request) SetParams(params Params) *Request {
 	return r
 }
 
+// SetParam add a paramater
+func (r *Request) AddParam(param string, value any) *Request {
+	if r.Params == nil {
+		r.Params = make(Params)
+	}
+
+	r.Params[param] = value
+
+	return r
+}
+
 func (r *Request) parsePath(path string, params Params) {
 	r.Path = path
 

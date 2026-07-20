@@ -85,6 +85,15 @@ func TestParseParams(t *testing.T) {
 			if r.Path != tc.expected {
 				t.Errorf("expected: %v, got: %v", tc.expected, r.Path)
 			}
+
+			r = &Request{}
+			for k, v := range tc.params {
+				r.AddParam(k, v)
+			}
+			r.parsePath(tc.path, tc.params)
+			if r.Path != tc.expected {
+				t.Errorf("expected: %v, got: %v", tc.expected, r.Path)
+			}
 		}
 	}
 
