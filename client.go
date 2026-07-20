@@ -99,7 +99,7 @@ func (c *Client) NR() *Request {
 		}
 	}
 
-	return &Request{client: c, Header: h}
+	return &Request{client: c, Header: h, Query: &url.Values{}}
 }
 
 func (c *Client) execute(req *Request) (*Response, error) {

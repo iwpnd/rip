@@ -31,7 +31,7 @@ type Request struct {
 	Params        Params
 	Path          string
 	ContentLength int64
-	Query         url.Values
+	Query         *url.Values
 	Result        any // NOTE: can I pass struct here to unmarshal resp body to?
 	URL           string
 	client        *Client
@@ -39,14 +39,14 @@ type Request struct {
 }
 
 // Execute executes a given request using a method on a given path
-func (r *Request) Execute(ctx context.Context, method, path string) (*Response, error) {
+func (r *Request) Execute(ctx context.Context, method, p string) (*Response, error) {
 	if r.client == nil {
 		return NewResponse(r, nil), ErrClientMissing
 	}
 
 	var err error
 
-	r.parsePath(path, r.Params)
+	r.parsePath(p, r.Params)
 	r.parseURL()
 
 	if rd, ok := r.Body.(io.Reader); ok {
@@ -93,7 +93,9 @@ func (r *Request) SetContentLength(length int64) *Request {
 }
 
 func (r *Request) parseQuery(query Query) {
-	r.Query = url.Values{}
+	if r.Query == nil {
+		r.Query = &url.Values{}
+	}
 	for k, v := range query {
 		switch v.(type) {
 		case float32:
@@ -131,8 +133,8 @@ func (r *Request) AddParam(param string, value any) *Request {
 	return r
 }
 
-func (r *Request) parsePath(path string, params Params) {
-	r.Path = path
+func (r *Request) parsePath(p string, params Params) {
+	r.Path = p
 
 	for k, v := range params {
 		var p string

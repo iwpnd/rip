@@ -242,7 +242,7 @@ func TestSetHeaders(t *testing.T) {
 func TestSetQuery(t *testing.T) {
 	type tcase struct {
 		query    Query
-		expQuery url.Values
+		expQuery *url.Values
 	}
 
 	tests := map[string]tcase{
@@ -251,7 +251,7 @@ func TestSetQuery(t *testing.T) {
 				"test1": "test",
 				"test2": "test",
 			},
-			expQuery: url.Values{
+			expQuery: &url.Values{
 				"test1": []string{"test"},
 				"test2": []string{"test"},
 			},
