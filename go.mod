@@ -1,3 +1,3 @@
-module github.com/iwpnd/rip/v2
+module github.com/iwpnd/rip
 
 go 1.27

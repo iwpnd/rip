@@ -11,7 +11,7 @@ I just want to REST in peace.
 ## Installation
 
 ```bash
-go get -u github.com/iwpnd/rip/v2
+go get -u github.com/iwpnd/rip
 ```
 
 ## License
