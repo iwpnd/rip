@@ -1,5 +1,6 @@
 [tools]
-golangci-lint = "2.9.0"
+golang = "1.27.0"
+golangci-lint = "2.13.1"
 "go:github.com/mfridman/tparse" = "latest"
 pre-commit = "latest"
 

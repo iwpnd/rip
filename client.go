@@ -2,137 +2,174 @@ package rip
 
 import (
 	"net/http"
-	"net/http/cookiejar"
-	"net/url"
+	gourl "net/url"
 	"time"
 )
 
-// Option to use in option pattern.
-type Option func(*Client)
-
-// ClientOptions to configure the http client.
-type ClientOptions struct {
-	Header  Header
-	Timeout time.Duration
-}
+// TODO:
+// - cookie jar
 
 // Client wraps an http client.
 type Client struct {
+	baseURL      string
+	pathParams   map[string]string
+	queryParams  gourl.Values
+	pinnedHeader http.Header
+
+	before []RequestMiddleware
+	after  []ResponseMiddleware
+
 	httpClient *http.Client
-	baseURL    *url.URL
-	options    *ClientOptions
-	Header     Header
 }
 
-// WithTimeout sets timeout in seconds on rips httpClient.
-func WithTimeout(timeout time.Duration) Option {
-	return func(c *Client) {
-		c.options.Timeout = timeout
-
-		c.httpClient.Timeout = timeout
-	}
-}
-
-// WithCookieJar sets a cookie jar on rips httpClient.
-func WithCookieJar(jar *cookiejar.Jar) Option {
-	return func(c *Client) {
-		c.httpClient.Jar = jar
-	}
-}
-
-// WithDefaultHeaders sets client default headers (e.g. x-api-key)
-func WithDefaultHeaders(headers Header) Option {
-	return func(c *Client) {
-		c.options.Header = headers
-	}
-}
-
-// WithTransport sets a custom Transport.
-func WithTransport(transport *http.Transport) Option {
-	return func(c *Client) {
-		c.httpClient.Transport = transport
-	}
-}
-
-func defaultTransport() *http.Transport {
-	return &http.Transport{
-		MaxIdleConns:        100,              // Maximum idle connections
-		MaxIdleConnsPerHost: 10,               // Maximum idle connections per host
-		IdleConnTimeout:     90 * time.Second, // Idle connection timeout
-		DisableCompression:  false,            // Enable compression
-		DisableKeepAlives:   false,            // Enable keep-alives
-	}
-}
-
-// NewClient creates a new Client
-func NewClient(host string, options ...Option) (*Client, error) {
-	u, err := url.Parse(host)
-	if err != nil {
-		return &Client{}, err
-	}
-
-	transport := defaultTransport()
-
+func C() *Client {
+	transport := T()
+	params := map[string]string{}
+	query := gourl.Values{}
+	header := http.Header{}
 	client := &Client{
-		baseURL: u,
-		options: &ClientOptions{},
 		httpClient: &http.Client{
 			Transport: transport,
 		},
+		before: []RequestMiddleware{
+			parseRequestUrl,
+		},
+		after: []ResponseMiddleware{
+			debugResponse,
+			parseResponseBody,
+			// TODO: add download middleware here
+		},
+		pathParams:   params,
+		queryParams:  query,
+		pinnedHeader: header,
 	}
 
-	for _, option := range options {
-		option(client)
-	}
+	return client
+}
 
-	return client, nil
+// NewClient creates a new Client
+func NewClient() *Client {
+	return C()
 }
 
 // NR creates a new request
 func (c *Client) NR() *Request {
-	h := http.Header{}
-
-	// set default host header
-	if c.options.Header != nil {
-		for k, v := range c.options.Header {
-			h.Set(k, v)
-		}
-	}
-
-	return &Request{client: c, Header: h, Query: &url.Values{}}
+	return &Request{client: c, Header: http.Header{}}
 }
 
-func (c *Client) execute(req *Request) (*Response, error) {
-	// either caller is responsible to close the request
-	// or Response methods do.
-	//nolint: bodyclose
-	resp, err := c.httpClient.Do(req.rawRequest)
-	if err != nil {
-		return NewResponse(req, resp), err
+func (c *Client) Get(url ...string) *Request {
+	req := c.NR()
+	req.Method = http.MethodGet
+	if len(url) > 0 {
+		req.RawURL = url[0]
 	}
+	return req
+}
 
-	response := &Response{
-		Request: req, rawResponse: resp,
+func (c *Client) Post(url ...string) *Request {
+	req := c.NR()
+	req.Method = http.MethodPost
+	if len(url) > 0 {
+		req.RawURL = url[0]
 	}
+	return req
+}
 
-	response.body = resp.Body
-	response.Close = func() (err error) {
-		if response.body != nil {
-			err := response.body.Close()
-			if err != nil {
-				return err
-			}
+func (c *Client) Put(url ...string) *Request {
+	req := c.NR()
+	req.Method = http.MethodPut
+	if len(url) > 0 {
+		req.RawURL = url[0]
+	}
+	return req
+}
+
+func (c *Client) Patch(url ...string) *Request {
+	req := c.NR()
+	req.Method = http.MethodPatch
+	if len(url) > 0 {
+		req.RawURL = url[0]
+	}
+	return req
+}
+
+func (c *Client) Delete(url ...string) *Request {
+	req := c.NR()
+	req.Method = http.MethodDelete
+	if len(url) > 0 {
+		req.RawURL = url[0]
+	}
+	return req
+}
+
+func (c *Client) Options(url ...string) *Request {
+	req := c.NR()
+	req.Method = http.MethodOptions
+	if len(url) > 0 {
+		req.RawURL = url[0]
+	}
+	return req
+}
+
+func (c *Client) Head(url ...string) *Request {
+	req := c.NR()
+	req.Method = http.MethodHead
+	if len(url) > 0 {
+		req.RawURL = url[0]
+	}
+	return req
+}
+
+func (c *Client) WrapRoundTripper(mw RoundTripperMiddleware) *Client {
+	c.httpClient.Transport = mw(c.httpClient.Transport)
+	return c
+}
+
+func (c *Client) SetBaseURL(baseURL string) *Client {
+	c.baseURL = baseURL
+	return c
+}
+
+func (c *Client) SetPathParams(params map[string]string) *Client {
+	c.pathParams = params
+	return c
+}
+
+func (c *Client) SetPathParam(param, value string) *Client {
+	c.pathParams[param] = value
+	return c
+}
+
+func (c *Client) SetQueryParams(params gourl.Values) *Client {
+	for i, v := range params {
+		for _, p := range v {
+			c.queryParams.Add(i, p)
 		}
+	}
+	return c
+}
 
-		if response.rawResponse.Body != nil {
-			rErr := response.rawResponse.Body.Close()
-			if rErr != nil {
-				return rErr
-			}
-		}
+func (c *Client) SetQueryParm(param, value string) *Client {
+	c.queryParams.Set(param, value)
+	return c
+}
 
-		return
+func (c *Client) SetTimeout(timeout time.Duration) *Client {
+	c.httpClient.Timeout = timeout
+	return c
+}
+
+func (c *Client) SetPinnedHeaders(header http.Header) *Client {
+	c.pinnedHeader = header
+	return c
+}
+
+func (c *Client) SetPinnedHeader(key, value string) *Client {
+	if c.pinnedHeader == nil {
+		c.pinnedHeader = http.Header{}
 	}
 
-	return response, nil
+	c.pinnedHeader.Set(key, value)
+
+	return c
 }

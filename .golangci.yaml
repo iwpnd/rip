@@ -124,6 +124,10 @@ linters:
     generated: lax
     rules:
       - linters:
+          - forbidigo
+        path:
+          middleware.go
+      - linters:
           - copyloopvar
           - dupl
           - errcheck

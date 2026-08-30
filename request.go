@@ -3,226 +3,214 @@ package rip
 import (
 	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
+	"encoding/json/v2"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
-	"net/url"
-	"strings"
+	gourl "net/url"
 )
-
-// ErrClientMissing occurs when Request is instantiated without Client.NR()
-var ErrClientMissing = errors.New("use .NR() to create a new request instead")
-
-// Header params passed to the request
-type Header = map[string]string
-
-// Params passed to the request
-type Params = map[string]any
-
-// Query are any query parameter passed to the request.
-type Query = map[string]any
 
 // Request is the RIP request.
 type Request struct {
-	Body          any
-	Header        http.Header
-	Params        Params
-	Path          string
-	ContentLength int64
-	Query         *url.Values
-	Result        any // NOTE: can I pass struct here to unmarshal resp body to?
-	URL           string
-	client        *Client
-	rawRequest    *http.Request
+	Header      http.Header
+	pathParams  map[string]string
+	queryParams gourl.Values
+
+	Body    []byte
+	body    io.ReadCloser // can only be read once
+	GetBody func() (io.ReadCloser, error)
+	Method  string
+	URL     *gourl.URL
+	RawURL  string
+	Target  any
+
+	contentLength int64
+	close         bool
+
+	client     *Client
+	rawRequest *http.Request
 }
 
-// Execute executes a given request using a method on a given path
-func (r *Request) Execute(ctx context.Context, method, p string) (*Response, error) {
-	if r.client == nil {
-		return NewResponse(r, nil), ErrClientMissing
+func (r *Request) Get(ctx context.Context, url string) (*Response, error) {
+	return r.Send(ctx, http.MethodGet, url)
+}
+
+func (r *Request) Post(ctx context.Context, url string) (*Response, error) {
+	return r.Send(ctx, http.MethodPost, url)
+}
+
+func (r *Request) Put(ctx context.Context, url string) (*Response, error) {
+	return r.Send(ctx, http.MethodPut, url)
+}
+
+func (r *Request) Patch(ctx context.Context, url string) (*Response, error) {
+	return r.Send(ctx, http.MethodPatch, url)
+}
+
+func (r *Request) Head(ctx context.Context, url string) (*Response, error) {
+	return r.Send(ctx, http.MethodHead, url)
+}
+
+func (r *Request) Option(ctx context.Context, url string) (*Response, error) {
+	return r.Send(ctx, http.MethodOptions, url)
+}
+
+func (r *Request) Delete(ctx context.Context, url string) (*Response, error) {
+	return r.Send(ctx, http.MethodDelete, url)
+}
+
+func (r *Request) Send(ctx context.Context, method, url string) (*Response, error) {
+	r.Method = method
+	r.RawURL = url
+
+	resp, _ := r.execute(ctx) //nolint:errcheck // handled in request
+	if resp.Err != nil {
+		return resp, resp.Err
 	}
 
-	var err error
+	return resp, resp.Err
+}
 
-	r.parsePath(p, r.Params)
-	r.parseURL()
-
-	if rd, ok := r.Body.(io.Reader); ok {
-		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, rd)
-	} else {
-		r.rawRequest, err = http.NewRequestWithContext(ctx, method, r.URL, http.NoBody)
-	}
-	if err != nil {
-		return NewResponse(r, nil), err
-	}
-
-	if r.ContentLength != 0 {
-		r.rawRequest.ContentLength = r.ContentLength
-	}
-
-	r.rawRequest.Header = r.Header
-
-	if r.Query != nil {
-		r.rawRequest.URL.RawQuery = r.Query.Encode()
-	}
-
-	resp, err := r.client.execute(r)
-	if err != nil {
-		return resp, err
-	}
-
+func (r *Request) Execute(ctx context.Context) (*Response, error) {
+	resp, err := r.execute(ctx)
 	return resp, err
 }
 
-// SetQuery to set query parameters
-func (r *Request) SetQuery(query Query) *Request {
-	r.parseQuery(query)
+// execute executes a given request using a method on a given path
+func (r *Request) execute(ctx context.Context) (resp *Response, err error) {
+	resp = &Response{Request: r}
+	defer func() {
+		if err != nil {
+			resp.Err = err
+		} else {
+			err = resp.Err
+		}
+	}()
 
-	return r
-}
-
-// SetContentLength for when you want to overwrite the default behaviour
-// of *http.Request to calculate Content-Length.
-// see: https://pkg.go.dev/net/http#NewRequestWithContext
-func (r *Request) SetContentLength(length int64) *Request {
-	r.ContentLength = length
-
-	return r
-}
-
-func (r *Request) parseQuery(query Query) {
-	if r.Query == nil {
-		r.Query = &url.Values{}
-	}
-	for k, v := range query {
-		switch v.(type) {
-		case float32:
-		case float64:
-			r.Query.Add(k, fmt.Sprintf("%.6f", v))
-		case int32:
-		case int64:
-		case int:
-			r.Query.Add(k, fmt.Sprintf("%d", v))
-		case string:
-			r.Query.Add(k, fmt.Sprintf("%s", v))
-		case bool:
-			r.Query.Add(k, fmt.Sprintf("%t", v))
-		default:
-			break
+	for _, mw := range r.client.before {
+		if err := mw(r.client, r); err != nil {
+			return resp, err
 		}
 	}
-}
 
-// SetParams to replace in path
-func (r *Request) SetParams(params Params) *Request {
-	r.Params = params
-
-	return r
-}
-
-// SetParam add a paramater
-func (r *Request) AddParam(param string, value any) *Request {
-	if r.Params == nil {
-		r.Params = make(Params)
+	contentLength := int64(len(r.Body))
+	if r.contentLength != 0 {
+		contentLength = r.contentLength
 	}
 
-	r.Params[param] = value
-
-	return r
-}
-
-func (r *Request) parsePath(p string, params Params) {
-	r.Path = p
-
-	for k, v := range params {
-		var p string
-
-		switch v.(type) {
-		case float32:
-		case float64:
-			p = fmt.Sprintf("%.6f", v)
-		case int32:
-		case int64:
-		case int:
-			p = fmt.Sprintf("%d", v)
-		case string:
-			p = fmt.Sprintf("%s", v)
-		default:
-			p = ""
-		}
-
-		if p != "" {
-			r.Path = strings.Replace(r.Path, fmt.Sprintf(":%s", k), p, 1)
+	var reqBody io.ReadCloser
+	if r.GetBody != nil {
+		reqBody, resp.Err = r.GetBody()
+		if resp.Err != nil {
+			return
 		}
 	}
-}
 
-// SetHeader to set a single header
-func (r *Request) SetHeader(key, value string) *Request {
-	if r.Header == nil {
-		r.Header = http.Header{}
+	maps.Copy(r.Header, r.client.pinnedHeader)
+
+	req := &http.Request{
+		Method:        r.Method,
+		Header:        r.Header.Clone(),
+		URL:           r.URL,
+		ContentLength: contentLength,
+		Body:          reqBody,
+		Close:         r.close,
 	}
 
-	r.Header.Add(key, value)
+	req = req.WithContext(ctx)
 
+	r.rawRequest = req
+	var rawResponse *http.Response
+	rawResponse, resp.Err = r.client.httpClient.Do(r.rawRequest) //nolint:bodyclose
+	resp.rawResponse = rawResponse
+
+	for _, mw := range r.client.after {
+		if err := mw(r.client, resp); err != nil {
+			return resp, err
+		}
+	}
+
+	return resp, resp.Err
+}
+
+func (r *Request) SetPathParams(params map[string]string) *Request {
+	if r.pathParams == nil {
+		r.pathParams = map[string]string{}
+	}
+
+	r.pathParams = params
 	return r
 }
 
-// SetHeaders to set multiple header as map[string]string
-func (r *Request) SetHeaders(header Header) *Request {
-	if r.Header == nil {
-		r.Header = http.Header{}
+func (r *Request) SetPathParam(param, value string) *Request {
+	if r.pathParams == nil {
+		r.pathParams = map[string]string{}
 	}
 
-	for k, v := range header {
-		r.Header.Set(k, v)
-	}
-
+	r.pathParams[param] = value
 	return r
 }
 
-// SetBody to set a request body
+func (r *Request) SetTarget(v any) *Request {
+	if v == nil {
+		return r
+	}
+
+	r.Target = v
+	return r
+}
+
+func (r *Request) SetContentType(ct string) *Request {
+	r.Header.Add("Content-Type", ct)
+	return r
+}
+
+func (r *Request) SetContentLength(cl int64) *Request {
+	r.rawRequest.ContentLength = cl
+	return r
+}
+
 func (r *Request) SetBody(body any) *Request {
 	if body == nil {
 		return r
 	}
 
-	// if we get an io.Reader we can set it and return
-	if _, ok := body.(io.Reader); ok {
-		r.Body = body
-		return r
+	switch b := body.(type) {
+	case io.ReadCloser:
+		r.body = b
+		r.GetBody = func() (io.ReadCloser, error) {
+			return r.body, nil
+		}
+	case io.Reader:
+		r.body = io.NopCloser(b)
+		r.GetBody = func() (io.ReadCloser, error) {
+			return r.body, nil
+		}
+	case []byte:
+		r.Body = b
+		r.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(b)), nil
+		}
+	case string:
+		r.Body = fmt.Append([]byte{}, body)
+		r.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(r.Body)), nil
+		}
+	default:
+		mb, err := json.Marshal(b)
+		if err != nil {
+			r.Body = []byte{}
+			r.GetBody = func() (io.ReadCloser, error) {
+				return nil, ErrInvalidRequestBody
+			}
+			return r
+		}
+		r.Body = mb
+		r.GetBody = func() (io.ReadCloser, error) {
+			return io.NopCloser(bytes.NewReader(mb)), nil
+		}
 	}
-
-	// lets otherwise assume we only get marshallable bodies
-	b := r.parseBody(body)
-	r.Body = b
 
 	return r
-}
-
-// NOTE: rn expected json only
-func (r *Request) parseBody(body any) io.Reader {
-	if body == nil {
-		return nil
-	}
-
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil
-	}
-
-	b := bytes.NewBuffer(jsonBody)
-
-	contentType := r.Header.Get("Content-Type")
-	if !IsJSON(contentType) {
-		r.Header.Set("Content-Type", "application/json")
-	}
-
-	return b
-}
-
-func (r *Request) parseURL() {
-	r.URL = r.client.baseURL.String() + r.Path
 }

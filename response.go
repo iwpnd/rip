@@ -3,30 +3,18 @@ package rip
 import (
 	"io"
 	"net/http"
-	"strings"
 )
 
 // Response the rip response wrapping the original request and response.
 type Response struct {
 	Request     *Request
+	Err         error
 	rawResponse *http.Response
-	body        io.ReadCloser
-	Close       func() error
+	body        []byte
 }
 
-func NewResponse(request *Request, rawResponse *http.Response) *Response {
-	resp := &Response{Request: request, rawResponse: rawResponse}
-	resp.Close = func() error { return nil }
-	return resp
-}
-
-// ContentLength returns the content-length.
-func (r *Response) ContentLength() int64 {
-	if r.rawResponse == nil {
-		return 0
-	}
-
-	return r.rawResponse.ContentLength
+func (r *Response) Close() error {
+	return r.rawResponse.Body.Close()
 }
 
 // Status returns the response status.
@@ -47,58 +35,86 @@ func (r *Response) StatusCode() int {
 	return r.rawResponse.StatusCode
 }
 
-// Header method returns the response headers.
-func (r *Response) Header() http.Header {
+func (r *Response) GetHeader(key string) string {
 	if r.rawResponse == nil {
-		return http.Header{}
-	}
-	return r.rawResponse.Header
-}
-
-// String method returns the body of the server response as String.
-func (r *Response) String() string {
-	if r.body == nil {
-		return ""
-	}
-	defer r.body.Close() //nolint: errcheck
-
-	body, err := io.ReadAll(r.body)
-	if err != nil {
 		return ""
 	}
 
-	return strings.TrimSpace(string(body))
+	return r.rawResponse.Header.Get(key)
 }
 
-// Body returns Body as byte array
-func (r *Response) Body() []byte {
-	if r.body == nil {
-		return []byte{}
-	}
-	defer r.body.Close() //nolint: errcheck
+func (r *Response) ContentType() string {
+	return r.GetHeader("Content-Type")
+}
 
-	body, err := io.ReadAll(r.body)
+func (r *Response) String() (string, error) {
+	b, err := r.Bytes()
 	if err != nil {
-		return []byte{}
+		return "", err
 	}
-
-	return body
+	return string(b), nil
 }
 
-// RawBody returns raw response body. be sure to close
-func (r *Response) RawBody() io.ReadCloser {
-	if r.rawResponse == nil {
-		return nil
+func (r *Response) Bytes() (body []byte, err error) {
+	if r.Err != nil {
+		return []byte{}, r.Err
 	}
-	return r.rawResponse.Body
+	if r.body != nil { // already read once
+		return r.body, nil
+	}
+	if r.rawResponse == nil || r.rawResponse.Body == nil {
+		return []byte{}, nil
+	}
+
+	defer func() {
+		err := r.rawResponse.Body.Close()
+		if err != nil {
+			r.Err = err
+		}
+		r.body = body
+	}()
+
+	b, err := io.ReadAll(r.rawResponse.Body)
+	if err != nil {
+		return nil, err
+	}
+	r.body = b
+
+	return b, nil
 }
 
-// IsSuccess returns true if 199 < StatusCode < 300
+type ResultState int
+
+const (
+	SuccessState ResultState = iota + 1
+	ErrorState
+	UnknownState
+)
+
+func (r *Response) responseState() ResultState {
+	if r == nil {
+		return UnknownState
+	}
+
+	if r.Err != nil {
+		return ErrorState
+	}
+
+	if code := r.StatusCode(); code > 199 && code < 300 {
+		return SuccessState
+	} else if code > 399 {
+		return ErrorState
+	} else {
+		return UnknownState
+	}
+}
+
+// IsSuccess returns true when response state is success.
 func (r *Response) IsSuccess() bool {
-	return r.StatusCode() > 199 && r.StatusCode() < 300
+	return r.responseState() == SuccessState
 }
 
-// IsError returns true if StatusCode > 399
+// IsError returns true if response state is error state.
 func (r *Response) IsError() bool {
-	return r.StatusCode() > 399
+	return r.responseState() == ErrorState
 }
