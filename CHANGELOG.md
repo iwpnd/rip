@@ -1,3 +1,19 @@
+## [1.0.0-rc.1](https://github.com/iwpnd/rip/compare/v0.8.2...v1.0.0-rc.1) (2026-08-30)
+
+### ⚠ BREAKING CHANGES
+
+* changes the entire rip api
+
+### ✨ Features
+
+* 💥 ✨ overhaul client and request ([ebdadc6](https://github.com/iwpnd/rip/commit/ebdadc61cfbb1095415d18e8557b33c6b9a2e993))
+
+### 🧹 Miscellaneous
+
+* 🔧 no need for v2 yet :D ([16c8930](https://github.com/iwpnd/rip/commit/16c89300e893addd8d59a308a70f4ab6d2b6d1bf))
+* 🔧 release config for prereleases ([3acfb9a](https://github.com/iwpnd/rip/commit/3acfb9af7f36ed835986a9b937fe2b461db6c18a))
+* 🔧 v2 ([cac533a](https://github.com/iwpnd/rip/commit/cac533a1dd2c3542b43e191192e25e3ba29b806a))
+
 ## [0.8.2](https://github.com/iwpnd/rip/compare/v0.8.1...v0.8.2) (2026-07-20)
 
 ### 🐛 Bug Fixes
