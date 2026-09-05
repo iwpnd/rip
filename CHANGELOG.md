@@ -1,3 +1,9 @@
+## [1.0.0-rc.4](https://github.com/iwpnd/rip/compare/v1.0.0-rc.3...v1.0.0-rc.4) (2026-09-05)
+
+### 🐛 Bug Fixes
+
+* 🐛 round trip middleware ([da96266](https://github.com/iwpnd/rip/commit/da962667cde164071119ef7f3823f9fa225906a6))
+
 ## [1.0.0-rc.3](https://github.com/iwpnd/rip/compare/v1.0.0-rc.2...v1.0.0-rc.3) (2026-09-05)
 
 ### 🐛 Bug Fixes
