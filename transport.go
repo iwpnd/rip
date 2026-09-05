@@ -29,18 +29,22 @@ type RoundTripFunc func(req *http.Request) (*http.Response, error)
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
 
-func WithAuth(base RoundTripper, key string) http.RoundTripper {
-	return RoundTripFunc(func(req *http.Request) (*http.Response, error) {
-		req = req.Clone(req.Context())
-		req.Header.Set("Authorization", "Bearer "+key)
-		return base.RoundTrip(req)
-	})
+func WithAuth(key string) func(base http.RoundTripper) http.RoundTripper {
+	return func(base http.RoundTripper) http.RoundTripper {
+		return RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			req = req.Clone(req.Context())
+			req.Header.Set("Authorization", "Bearer "+key)
+			return base.RoundTrip(req)
+		})
+	}
 }
 
-func WithAPIKey(base http.RoundTripper, key string) http.RoundTripper {
-	return RoundTripFunc(func(req *http.Request) (*http.Response, error) {
-		req = req.Clone(req.Context())
-		req.Header.Set("x-api-key", key)
-		return base.RoundTrip(req)
-	})
+func WithAPIKey(key string) func(base http.RoundTripper) http.RoundTripper {
+	return func(base http.RoundTripper) http.RoundTripper {
+		return RoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			req = req.Clone(req.Context())
+			req.Header.Set("x-api-key", key)
+			return base.RoundTrip(req)
+		})
+	}
 }

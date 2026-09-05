@@ -9,6 +9,78 @@ import (
 	"testing"
 )
 
+func TestRoundTripMiddlewares(t *testing.T) {
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api-key":
+			w.Header().Add("method", r.Method)
+
+			if r.Header.Get("x-api-key") != "" {
+				w.Header().Add("x-api-key", r.Header.Get("x-api-key"))
+				w.WriteHeader(http.StatusOK)
+			}
+
+			w.WriteHeader(http.StatusUnauthorized)
+		case "/auth-token":
+			defer r.Body.Close()
+
+			if r.Header.Get("Authorization") != "" {
+				w.Header().
+					Add("Authorization", strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1))
+				w.WriteHeader(http.StatusOK)
+			}
+
+			w.WriteHeader(http.StatusUnauthorized)
+		default:
+			w.Header().Add("method", r.Method)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
+
+	s := createTestServer(testHandler)
+	defer s.Close()
+
+	type tcase struct {
+		fn     func(c *Client, secret string) *Response
+		secret string
+		header string
+	}
+	tests := map[string]tcase{
+		"x-api-key": {
+			fn: func(c *Client, s string) *Response {
+				c = c.WrapRoundTripper(WithAPIKey(s))
+				resp, _ := c.NR().Get(t.Context(), "/api-key")
+				return resp
+			},
+			header: "x-api-key",
+			secret: "secret",
+		},
+		"authorization": {
+			fn: func(c *Client, s string) *Response {
+				c = c.WrapRoundTripper(WithAuth(s))
+				resp, _ := c.NR().Get(t.Context(), "/auth-token")
+				return resp
+			},
+			header: "authorization",
+			secret: "other_secret",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			c := createTestClient(s.URL)
+			resp := tc.fn(c, tc.secret)
+			if resp.Err != nil {
+				t.Fatalf("no transport error expected, got: %s", resp.Err)
+			}
+			gotSecret := resp.GetHeader(tc.header)
+			if gotSecret != tc.secret {
+				t.Fatalf("expected secret to be: %s got: %s", tc.secret, gotSecret)
+			}
+		})
+	}
+}
+
 func TestRequestBody(t *testing.T) {
 	testHandler := func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
