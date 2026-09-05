@@ -1,6 +1,7 @@
 package rip
 
 import (
+	"bytes"
 	"io"
 	"net/http"
 )
@@ -81,6 +82,22 @@ func (r *Response) Bytes() (body []byte, err error) {
 	r.body = b
 
 	return b, nil
+}
+
+func (r *Response) Body() (io.ReadCloser, error) {
+	if r.Err != nil {
+		return nil, r.Err
+	}
+
+	if r.body != nil { // body was read already
+		return io.NopCloser(bytes.NewReader(r.body)), nil
+	}
+
+	if r.rawResponse == nil || r.rawResponse.Body == nil {
+		return io.NopCloser(bytes.NewReader([]byte{})), nil
+	}
+
+	return r.rawResponse.Body, nil
 }
 
 type ResultState int
