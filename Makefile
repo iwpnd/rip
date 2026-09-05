@@ -29,7 +29,7 @@ install:
 .PHONY: test
 test:
 	@echo "running tests"
-	@go test -v -json ./... | tparse -all
+	@go test -v -cover -json ./... | tparse -all
 
 .PHONY: lint
 lint:

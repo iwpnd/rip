@@ -29,7 +29,7 @@ type RoundTripFunc func(req *http.Request) (*http.Response, error)
 
 func (f RoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
 
-func WithAuth(key string) func(base http.RoundTripper) http.RoundTripper {
+func WithAuth(key string) RoundTripperMiddleware {
 	return func(base http.RoundTripper) http.RoundTripper {
 		return RoundTripFunc(func(req *http.Request) (*http.Response, error) {
 			req = req.Clone(req.Context())
@@ -39,7 +39,7 @@ func WithAuth(key string) func(base http.RoundTripper) http.RoundTripper {
 	}
 }
 
-func WithAPIKey(key string) func(base http.RoundTripper) http.RoundTripper {
+func WithAPIKey(key string) RoundTripperMiddleware {
 	return func(base http.RoundTripper) http.RoundTripper {
 		return RoundTripFunc(func(req *http.Request) (*http.Response, error) {
 			req = req.Clone(req.Context())
