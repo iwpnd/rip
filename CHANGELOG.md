@@ -1,3 +1,9 @@
+## [1.0.0-rc.3](https://github.com/iwpnd/rip/compare/v1.0.0-rc.2...v1.0.0-rc.3) (2026-09-05)
+
+### 🐛 Bug Fixes
+
+* 🐛 set request header ([a65dec1](https://github.com/iwpnd/rip/commit/a65dec1fe7f3859d60b1927d5d73e805f1c71747))
+
 ## [1.0.0-rc.2](https://github.com/iwpnd/rip/compare/v1.0.0-rc.1...v1.0.0-rc.2) (2026-09-05)
 
 ### 🐛 Bug Fixes
