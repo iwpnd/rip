@@ -1,3 +1,9 @@
+## [1.0.0-rc.2](https://github.com/iwpnd/rip/compare/v1.0.0-rc.1...v1.0.0-rc.2) (2026-09-05)
+
+### 🐛 Bug Fixes
+
+* 🐛 readcloser from response body if not read once ([28156f4](https://github.com/iwpnd/rip/commit/28156f4d8af9d341d589c24b7219907d0dff0836))
+
 ## [1.0.0-rc.1](https://github.com/iwpnd/rip/compare/v0.8.2...v1.0.0-rc.1) (2026-08-30)
 
 ### ⚠ BREAKING CHANGES
