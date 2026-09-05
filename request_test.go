@@ -18,6 +18,7 @@ func TestRoundTripMiddlewares(t *testing.T) {
 			if r.Header.Get("x-api-key") != "" {
 				w.Header().Add("x-api-key", r.Header.Get("x-api-key"))
 				w.WriteHeader(http.StatusOK)
+				return
 			}
 
 			w.WriteHeader(http.StatusUnauthorized)
@@ -28,6 +29,7 @@ func TestRoundTripMiddlewares(t *testing.T) {
 				w.Header().
 					Add("Authorization", strings.Replace(r.Header.Get("Authorization"), "Bearer ", "", 1))
 				w.WriteHeader(http.StatusOK)
+				return
 			}
 
 			w.WriteHeader(http.StatusUnauthorized)
@@ -620,7 +622,7 @@ func TestRequestMethods(t *testing.T) {
 			}
 
 			gotStatusCode := resp.StatusCode()
-			if gotStatusCode != resp.StatusCode() {
+			if gotStatusCode != tc.expectedCode {
 				t.Fatalf("expected status code %d, got '%d'", tc.expectedCode, gotStatusCode)
 			}
 		})
