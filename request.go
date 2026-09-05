@@ -134,6 +134,24 @@ func (r *Request) execute(ctx context.Context) (resp *Response, err error) {
 	return resp, resp.Err
 }
 
+func (r *Request) SetHeader(param, value string) *Request {
+	if r.Header == nil {
+		r.Header = http.Header{}
+	}
+
+	r.Header.Set(param, value)
+	return r
+}
+
+func (r *Request) SetHeaders(header http.Header) *Request {
+	if r.Header == nil {
+		r.Header = http.Header{}
+	}
+
+	r.Header = header
+	return r
+}
+
 func (r *Request) SetPathParams(params map[string]string) *Request {
 	if r.pathParams == nil {
 		r.pathParams = map[string]string{}
