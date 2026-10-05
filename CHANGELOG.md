@@ -1,3 +1,13 @@
+## [1.0.0-rc.5](https://github.com/iwpnd/rip/compare/v1.0.0-rc.4...v1.0.0-rc.5) (2026-10-05)
+
+### 🐛 Bug Fixes
+
+* 🐛 cookiejar ([1aefbe4](https://github.com/iwpnd/rip/commit/1aefbe4fbc10a966d3e899586858231eefd26b86))
+
+### 🧹 Miscellaneous
+
+* 🔧 incl coverage on tests, use return type on mw helpers ([fda3d05](https://github.com/iwpnd/rip/commit/fda3d05b62caefcbc454929778c546b7a22a5cff))
+
 ## [1.0.0-rc.4](https://github.com/iwpnd/rip/compare/v1.0.0-rc.3...v1.0.0-rc.4) (2026-09-05)
 
 ### 🐛 Bug Fixes
