@@ -2,12 +2,10 @@ package rip
 
 import (
 	"net/http"
+	"net/http/cookiejar"
 	gourl "net/url"
 	"time"
 )
-
-// TODO:
-// - cookie jar
 
 // Client wraps an http client.
 type Client struct {
@@ -127,6 +125,11 @@ func (c *Client) WrapRoundTripper(mw RoundTripperMiddleware) *Client {
 
 func (c *Client) SetBaseURL(baseURL string) *Client {
 	c.baseURL = baseURL
+	return c
+}
+
+func (c *Client) SetCookieJar(jar *cookiejar.Jar) *Client {
+	c.httpClient.Jar = jar
 	return c
 }
 
