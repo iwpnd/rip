@@ -27,6 +27,15 @@ func (r *Response) Status() string {
 	return r.rawResponse.Status
 }
 
+// ContentLength returns the size of the response body if there is one.
+func (r *Response) ContentLength() int64 {
+	if r.rawResponse == nil {
+		return 0
+	}
+
+	return r.rawResponse.ContentLength
+}
+
 // StatusCode returns the response status code.
 func (r *Response) StatusCode() int {
 	if r.rawResponse == nil {
