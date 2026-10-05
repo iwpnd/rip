@@ -1,3 +1,9 @@
+## [1.0.0-rc.6](https://github.com/iwpnd/rip/compare/v1.0.0-rc.5...v1.0.0-rc.6) (2026-10-05)
+
+### 🐛 Bug Fixes
+
+* 🐛 add contentlength if present ([f8092c1](https://github.com/iwpnd/rip/commit/f8092c15015d36f8044018936673111d46a1f1f8))
+
 ## [1.0.0-rc.5](https://github.com/iwpnd/rip/compare/v1.0.0-rc.4...v1.0.0-rc.5) (2026-10-05)
 
 ### 🐛 Bug Fixes
