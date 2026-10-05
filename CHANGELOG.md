@@ -1,3 +1,9 @@
+## [1.0.0-rc.7](https://github.com/iwpnd/rip/compare/v1.0.0-rc.6...v1.0.0-rc.7) (2026-10-05)
+
+### 🐛 Bug Fixes
+
+* 🐛 setting content length on nil raw request ([9435acf](https://github.com/iwpnd/rip/commit/9435acf2b4c970e4aaf79dc2ef39db1bed89422b))
+
 ## [1.0.0-rc.6](https://github.com/iwpnd/rip/compare/v1.0.0-rc.5...v1.0.0-rc.6) (2026-10-05)
 
 ### 🐛 Bug Fixes
