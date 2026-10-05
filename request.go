@@ -185,7 +185,7 @@ func (r *Request) SetContentType(ct string) *Request {
 }
 
 func (r *Request) SetContentLength(cl int64) *Request {
-	r.rawRequest.ContentLength = cl
+	r.contentLength = cl
 	return r
 }
 
